@@ -23,7 +23,7 @@ COPY frontend/ ./
 # Set build environment variables
 ENV SKIP_PREFLIGHT_CHECK=true
 ENV TSC_COMPILE_ON_ERROR=true
-ENV REACT_APP_API_URL=https://ralphodex.up.railway.app/api
+ENV REACT_APP_API_URL=https://backend-production-a0a1.up.railway.app/api
 
 # Build the application
 RUN npm run build
