@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ralph-db
+    environment:
+      POSTGRES_DB: ralph_creator_db
+      POSTGRES_USER: ralph_admin
+      POSTGRES_PASSWORD: secure_password_here
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ralph_admin -d ralph_creator_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ralph-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ralph-backend
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://ralph_admin:secure_password_here@postgres:5432/ralph_creator_db
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ralph_creator_db
+      DB_USER: ralph_admin
+      DB_PASSWORD: secure_password_here
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      JWT_EXPIRES_IN: 7d
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ralph-network
+    volumes:
+      - ./backend/uploads:/app/uploads
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: http://localhost:3001/api
+    container_name: ralph-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - ralph-network
+
+  # Redis for caching (optional, for future scaling)
+  redis:
+    image: redis:7-alpine
+    container_name: ralph-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - ralph-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  ralph-network:
+    driver: bridge
+    name: ralph-creator-network

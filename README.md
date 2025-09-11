@@ -1,36 +1,58 @@
-# Ralph Creator Database
+# Creator Rolodex 🎨
 
-A comprehensive platform for managing content creator relationships, tracking interactions, and analyzing performance metrics.
+A comprehensive full-stack creator database and management system with AI-powered insights and recommendations, built with React, Node.js, PostgreSQL, and OpenAI integration.
+
+![Creator Rolodex](https://img.shields.io/badge/Creator-Rolodex-EB008B?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K)
 
 ## 🚀 Features
 
-- **Creator Management**: Comprehensive profiles with social media handles, audience metrics
-- **Interaction Tracking**: Record and track all creator interactions with project context
-- **Search & Filter**: Advanced search capabilities with tags and filters
-- **Authentication**: Secure JWT-based authentication system
-- **Analytics**: Dashboard with key metrics and performance indicators
-- **Responsive Design**: Modern UI built with Material-UI
+### ✨ Core Functionality
+- **Creator Database**: Comprehensive creator profiles with social media handles, audience metrics, and engagement rates
+- **Smart Search & Filtering**: Find creators by name, content type, tags, and verification status
+- **Interactive Dashboard**: Real-time analytics and creator management interface
+- **Secure Authentication**: JWT-based auth system with role-based access control
 
-## 🛠️ Tech Stack
+### 🤖 AI-Powered Features
+- **Creator Insights**: AI-generated marketability scores, key strengths analysis, and content strategy recommendations
+- **Collaboration Recommendations**: Intelligent creator matching and campaign idea generation
+- **Brand Fit Analysis**: Automated brand partnership recommendations based on creator profiles
+- **Fallback Intelligence**: Works with or without OpenAI API key configuration
 
-### Backend
-- Node.js with Express.js
-- PostgreSQL with Sequelize ORM
-- JWT Authentication
-- bcryptjs for password hashing
+### 🎨 Design & UX
+- **Ralph Branding**: Custom color scheme with Ralph brand colors (#EB008B, #31BDBF, #F16524)
+- **Responsive Design**: Mobile-first approach with Material-UI components
+- **Intuitive Navigation**: Clean, professional interface with collapsible sections
+- **Real-time Updates**: Live data synchronization and instant feedback
+
+## 🏗️ Tech Stack
 
 ### Frontend
-- React 18 with TypeScript
-- Redux Toolkit for state management
-- Material-UI for components
-- React Router for navigation
-- Axios for API calls
+- **React 18** with TypeScript
+- **Material-UI (MUI)** for components and theming
+- **Redux Toolkit** for state management
+- **React Router** for navigation
+- **Axios** for API communication
 
-## 📋 Prerequisites
+### Backend
+- **Node.js** with Express.js
+- **PostgreSQL** with Sequelize ORM
+- **JWT** authentication
+- **OpenAI API** integration
+- **CORS** enabled for cross-origin requests
 
-- Node.js (v18+)
-- PostgreSQL (v12+)
-- Railway.app account (for deployment)
+### DevOps
+- **Docker** containerization
+- **Docker Compose** for orchestration
+- **PostgreSQL** database
+- **Nginx** for frontend serving
+- **Health checks** and monitoring
+
+## 🚦 Getting Started
+
+### Prerequisites
+- Node.js 20+
+- PostgreSQL 15+
+- Docker & Docker Compose (optional)
 
 ## 🔧 Installation
 
