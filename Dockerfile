@@ -1,18 +1,18 @@
 # Root Dockerfile for Railway deployment
 # This builds the frontend from the correct context
+# Updated: Using npm install instead of npm ci to avoid lock file issues
 
 # Build stage
 FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Copy frontend package files
+# Copy frontend package files first
 COPY frontend/package.json ./
-COPY frontend/package-lock.json ./
 
-# Install all dependencies (including dev dependencies for build)
-# Using npm install instead of npm ci for Railway compatibility
-RUN npm install
+# Install dependencies using npm install for Railway
+# This avoids package-lock.json issues
+RUN npm install --legacy-peer-deps
 
 # Copy frontend source code
 COPY frontend/ ./
