@@ -1,6 +1,7 @@
 # Root Dockerfile for Railway deployment
 # This builds the frontend from the correct context
 # Updated: Using npm install instead of npm ci to avoid lock file issues
+# Fixed: nginx config updated to remove backend proxy references
 
 # Build stage
 FROM node:20-alpine AS build
