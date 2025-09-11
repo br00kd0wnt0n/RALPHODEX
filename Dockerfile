@@ -8,20 +8,17 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Copy package files first (React app is at root level)
-COPY package.json ./
-COPY package-lock.json ./
+# Copy frontend package files first
+COPY frontend/package.json ./
+COPY frontend/package-lock.json ./
 
 # Debug and install dependencies with force resolution
 RUN ls -la ./
 RUN npm ci --force
 RUN npm install ajv@^8.0.0 --save-dev
 
-# Copy source code
-COPY . ./ 
-
-# Exclude backend and other non-frontend files
-RUN rm -rf backend/ docs/ *.md *.pdf *.xlsx
+# Copy frontend source code
+COPY frontend/ ./
 
 # Set build environment variables
 ENV SKIP_PREFLIGHT_CHECK=true
