@@ -29,8 +29,8 @@ FROM nginx:alpine
 # Copy built files to nginx
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Copy nginx config
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+# Copy nginx config (Railway needs this at root level)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port (Railway will assign dynamically)
 EXPOSE 80
