@@ -11,7 +11,8 @@ COPY frontend/package.json ./
 COPY frontend/package-lock.json ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm ci
+# Using npm install instead of npm ci for Railway compatibility
+RUN npm install
 
 # Copy frontend source code
 COPY frontend/ ./
