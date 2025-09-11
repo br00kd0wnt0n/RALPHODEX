@@ -124,6 +124,63 @@ const creatorController = {
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
+  },
+
+  async getCreatorInsights(req, res) {
+    try {
+      const { generateCreatorInsights } = require('../services/aiService');
+      
+      const creator = await Creator.findByPk(req.params.id, {
+        include: [{ 
+          model: Interaction, 
+          as: 'interactions',
+          order: [['date', 'DESC']]
+        }]
+      });
+      
+      if (!creator) {
+        return res.status(404).json({ error: 'Creator not found' });
+      }
+      
+      const insights = await generateCreatorInsights(creator);
+      
+      res.json({
+        creator_id: creator.id,
+        creator_name: creator.full_name,
+        ...insights
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  async getCreatorRecommendations(req, res) {
+    try {
+      const { generateMatchingRecommendations } = require('../services/aiService');
+      
+      const creator = await Creator.findByPk(req.params.id);
+      
+      if (!creator) {
+        return res.status(404).json({ error: 'Creator not found' });
+      }
+      
+      const allCreators = await Creator.findAll({
+        where: {
+          id: { [Op.ne]: creator.id }
+        },
+        limit: 20
+      });
+      
+      const recommendations = await generateMatchingRecommendations(creator, allCreators);
+      
+      res.json({
+        creator_id: creator.id,
+        creator_name: creator.full_name,
+        ...recommendations
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   }
 };
 

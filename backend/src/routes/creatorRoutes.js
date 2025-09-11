@@ -14,4 +14,8 @@ router.put('/:id', validationMiddleware.validateCreator, creatorController.updat
 router.delete('/:id', creatorController.deleteCreator);
 router.post('/:id/interactions', validationMiddleware.validateInteraction, creatorController.addInteraction);
 
+// AI-powered endpoints
+router.get('/:id/insights', creatorController.getCreatorInsights);
+router.get('/:id/recommendations', creatorController.getCreatorRecommendations);
+
 module.exports = router;
