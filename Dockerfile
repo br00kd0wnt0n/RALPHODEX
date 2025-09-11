@@ -11,9 +11,10 @@ WORKDIR /app
 COPY frontend/package.json ./
 COPY frontend/package-lock.json ./
 
-# Debug and install dependencies
+# Debug and install dependencies with force resolution
 RUN ls -la ./
-RUN npm ci
+RUN npm ci --force
+RUN npm install ajv@^8.0.0 --save-dev
 
 # Copy frontend source code
 COPY frontend/ ./
