@@ -28,6 +28,9 @@ ENV REACT_APP_API_URL=https://backend-production-a0a1.up.railway.app/api
 # Build the application
 RUN npm run build
 
+# Debug: List build output
+RUN ls -la build/
+
 # Production stage
 FROM nginx:alpine
 
@@ -36,6 +39,9 @@ COPY --from=build /app/build /usr/share/nginx/html
 
 # Copy nginx config (Railway needs this at root level)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Debug: Check what files were copied
+RUN ls -la /usr/share/nginx/html/
 
 # Expose port (Railway will assign dynamically)
 EXPOSE 80
