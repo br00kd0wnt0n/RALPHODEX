@@ -9,10 +9,11 @@ WORKDIR /app
 
 # Copy frontend package files first
 COPY frontend/package.json ./
+COPY frontend/package-lock.json ./
 
-# Install dependencies using npm install for Railway
-# This avoids package-lock.json issues
-RUN npm install --legacy-peer-deps
+# Debug and install dependencies
+RUN ls -la ./
+RUN npm ci
 
 # Copy frontend source code
 COPY frontend/ ./
