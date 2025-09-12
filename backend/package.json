@@ -19,7 +19,9 @@
   "author": "Ralph Innovation Team",
   "license": "UNLICENSED",
   "dependencies": {
+    "axios": "^1.12.1",
     "bcryptjs": "^2.4.3",
+    "cheerio": "^1.1.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
@@ -28,6 +30,7 @@
     "openai": "^5.20.1",
     "pg": "^8.11.3",
     "pg-hstore": "^2.3.4",
+    "puppeteer": "^24.20.0",
     "sequelize": "^6.33.0",
     "xlsx": "^0.18.5"
   },

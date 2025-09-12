@@ -42,6 +42,24 @@ const Creator = sequelize.define('Creator', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  facebook: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  facebook_followers: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0
+  },
+  demographics: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      young_adult_percentage: 0,
+      us_followers_percentage: 0,
+      age_brackets: {},
+      countries: {}
+    }
+  },
   primary_content_type: {
     type: DataTypes.STRING,
     allowNull: true

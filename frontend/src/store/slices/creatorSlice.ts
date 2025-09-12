@@ -47,7 +47,7 @@ const initialState: CreatorState = {
 
 export const fetchCreators = createAsyncThunk(
   'creators/fetchCreators',
-  async (params: { page?: number; limit?: number; search?: string; tags?: string; verified?: boolean }) => {
+  async (params: { page?: number; limit?: number; search?: string; tags?: string; verified?: boolean; metaFilter?: boolean }) => {
     const response = await creatorAPI.getCreators(params);
     return response.data;
   }

@@ -18,4 +18,7 @@ router.post('/:id/interactions', validationMiddleware.validateInteraction, creat
 router.get('/:id/insights', creatorController.getCreatorInsights);
 router.get('/:id/recommendations', creatorController.getCreatorRecommendations);
 
+// Social media endpoints
+router.get('/:id/posts', creatorController.getCreatorPosts);
+
 module.exports = router;

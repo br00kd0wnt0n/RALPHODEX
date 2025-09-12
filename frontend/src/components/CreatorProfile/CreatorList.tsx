@@ -23,6 +23,7 @@ import {
   Delete as DeleteIcon,
   Add as AddIcon,
   Visibility as VisibilityIcon,
+  FilterAlt as FilterAltIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
@@ -37,10 +38,15 @@ export default function CreatorList() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  const [metaFilter, setMetaFilter] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchCreators({ page, search: search || undefined }));
-  }, [dispatch, page, search]);
+    dispatch(fetchCreators({ 
+      page, 
+      search: search || undefined,
+      metaFilter: metaFilter || undefined 
+    }));
+  }, [dispatch, page, search, metaFilter]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
@@ -69,14 +75,53 @@ export default function CreatorList() {
         <Typography variant="h4" component="h1">
           Creators ({total})
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setOpenCreateDialog(true)}
-        >
-          Add Creator
-        </Button>
+        <Box display="flex" gap={2}>
+          <Button
+            variant={metaFilter ? "contained" : "outlined"}
+            startIcon={<FilterAltIcon />}
+            onClick={() => {
+              setMetaFilter(!metaFilter);
+              setPage(1);
+            }}
+            color={metaFilter ? "secondary" : "primary"}
+            sx={{
+              backgroundColor: metaFilter ? '#31BDBF' : 'transparent',
+              '&:hover': {
+                backgroundColor: metaFilter ? '#28A5A7' : 'rgba(49, 189, 191, 0.1)'
+              }
+            }}
+          >
+            Filter Meta Creators
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setOpenCreateDialog(true)}
+          >
+            Add Creator
+          </Button>
+        </Box>
       </Box>
+
+      {metaFilter && (
+        <Box mb={2}>
+          <Chip
+            label="Filter Active: Facebook >1K followers, Young Adult >20%, US followers >20%"
+            color="secondary"
+            onDelete={() => {
+              setMetaFilter(false);
+              setPage(1);
+            }}
+            sx={{ 
+              backgroundColor: '#31BDBF',
+              color: 'white',
+              '& .MuiChip-deleteIcon': {
+                color: 'white'
+              }
+            }}
+          />
+        </Box>
+      )}
 
       <Paper sx={{ p: 2, mb: 3 }}>
         <TextField

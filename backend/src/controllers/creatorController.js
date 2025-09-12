@@ -1,10 +1,11 @@
 const { Creator, Interaction } = require('../models');
 const { Op } = require('sequelize');
+const socialMediaFetcher = require('../utils/socialMediaFetcher');
 
 const creatorController = {
   async getAllCreators(req, res) {
     try {
-      const { page = 1, limit = 20, search, tags, verified } = req.query;
+      const { page = 1, limit = 20, search, tags, verified, metaFilter } = req.query;
       const offset = (page - 1) * limit;
       
       const where = {};
@@ -24,6 +25,15 @@ const creatorController = {
       
       if (verified !== undefined) {
         where.verified = verified === 'true';
+      }
+      
+      // META Filter: >1K FB followers, Young Adult >20%, US >20%
+      if (metaFilter === 'true') {
+        where.facebook_followers = { [Op.gt]: 1000 };
+        where[Op.and] = [
+          { 'demographics.young_adult_percentage': { [Op.gt]: 20 } },
+          { 'demographics.us_followers_percentage': { [Op.gt]: 20 } }
+        ];
       }
       
       const creators = await Creator.findAndCountAll({
@@ -180,6 +190,39 @@ const creatorController = {
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
+    }
+  },
+
+  async getCreatorPosts(req, res) {
+    try {
+      const creator = await Creator.findByPk(req.params.id);
+      
+      if (!creator) {
+        return res.status(404).json({ error: 'Creator not found' });
+      }
+      
+      // Fetch recent posts from social media platforms
+      const posts = await socialMediaFetcher.fetchCreatorPosts(creator);
+      
+      res.json({
+        creator_id: creator.id,
+        creator_name: creator.full_name,
+        platforms: {
+          instagram: creator.instagram || null,
+          youtube: creator.youtube || null,
+          tiktok: creator.tiktok || null,
+          twitter: creator.twitter || null
+        },
+        posts: posts,
+        total_posts: posts.length,
+        fetched_at: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error fetching creator posts:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch social media posts',
+        message: error.message 
+      });
     }
   }
 };

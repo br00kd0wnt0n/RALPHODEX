@@ -34,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import { fetchCreatorById } from '../../store/slices/creatorSlice';
+import RecentPosts from '../SocialMedia/RecentPosts';
 
 export default function CreatorDetail() {
   const { id } = useParams<{ id: string }>();
@@ -605,6 +606,11 @@ export default function CreatorDetail() {
             </Alert>
           )}
         </Card>
+      </Box>
+
+      {/* Recent Posts Section */}
+      <Box sx={{ mb: 2 }}>
+        <RecentPosts creatorId={creator.id} />
       </Box>
 
       {/* Recent Interactions Section */}
