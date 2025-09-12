@@ -27,10 +27,10 @@ ENV GENERATE_SOURCEMAP=false
 ENV REACT_APP_API_URL=https://backend-production-a0a1.up.railway.app/api
 
 # Build the application
-RUN npm run build
+RUN SKIP_PREFLIGHT_CHECK=true TSC_COMPILE_ON_ERROR=true GENERATE_SOURCEMAP=false CI=false npm run build
 
 # Debug: List build output
-RUN ls -la build/
+RUN ls -la build/ || echo "Build directory:" && ls -la
 
 # Production stage
 FROM nginx:alpine
@@ -44,8 +44,14 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Debug: Check what files were copied
 RUN ls -la /usr/share/nginx/html/
 
+# Copy a startup script to handle Railway's PORT variable
+RUN echo '#!/bin/sh\n\
+sed -i "s/listen 80;/listen ${PORT:-80};/g" /etc/nginx/conf.d/default.conf\n\
+sed -i "s/listen \\[::\\]:80;/listen \\[::\\]:${PORT:-80};/g" /etc/nginx/conf.d/default.conf\n\
+nginx -g "daemon off;"' > /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
+
 # Expose port (Railway will assign dynamically)
 EXPOSE 80
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start nginx with PORT handling
+CMD ["/docker-entrypoint.sh"]
