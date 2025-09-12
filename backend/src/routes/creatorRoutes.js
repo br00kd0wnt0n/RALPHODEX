@@ -5,10 +5,12 @@ const validationMiddleware = require('../middleware/validationMiddleware');
 
 const router = express.Router();
 
-router.use(authMiddleware);
-
+// Public routes (no auth required for viewing)
 router.get('/', creatorController.getAllCreators);
 router.get('/:id', creatorController.getCreatorById);
+
+// Protected routes (auth required for modifications)
+router.use(authMiddleware);
 router.post('/', validationMiddleware.validateCreator, creatorController.createCreator);
 router.put('/:id', validationMiddleware.validateCreator, creatorController.updateCreator);
 router.delete('/:id', creatorController.deleteCreator);
