@@ -44,14 +44,16 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Debug: Check what files were copied
 RUN ls -la /usr/share/nginx/html/
 
-# Copy a startup script to handle Railway's PORT variable
-RUN echo '#!/bin/sh\n\
-sed -i "s/listen 80;/listen ${PORT:-80};/g" /etc/nginx/conf.d/default.conf\n\
-sed -i "s/listen \\[::\\]:80;/listen \\[::\\]:${PORT:-80};/g" /etc/nginx/conf.d/default.conf\n\
-nginx -g "daemon off;"' > /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
+# Create startup script for Railway's PORT
+RUN printf '#!/bin/sh\n\
+if [ -n "$PORT" ]; then\n\
+  sed -i "s/listen 80;/listen $PORT;/g" /etc/nginx/conf.d/default.conf\n\
+  sed -i "s/listen \\[::\\]:80;/listen \\[::\\]:$PORT;/g" /etc/nginx/conf.d/default.conf\n\
+fi\n\
+exec nginx -g "daemon off;"\n' > /start.sh && chmod +x /start.sh
 
 # Expose port (Railway will assign dynamically)
 EXPOSE 80
 
 # Start nginx with PORT handling
-CMD ["/docker-entrypoint.sh"]
+CMD ["/bin/sh", "/start.sh"]
