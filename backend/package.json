@@ -1,6 +1,6 @@
 {
   "name": "ralph-creator-database",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Creator and Influencer Management Platform for Ralph",
   "main": "server.js",
   "scripts": {
