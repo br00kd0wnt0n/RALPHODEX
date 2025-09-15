@@ -264,7 +264,7 @@ export default function CreatorDetail() {
                     Interactions
                   </Typography>
                   <Typography variant="h5" sx={{ fontWeight: 700, color: '#EB008B', mb: 0.5 }}>
-                    {creator.interactions?.length || 0}
+        {(creator.interactions || []).length}
                   </Typography>
                   <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
                     Total
@@ -337,13 +337,13 @@ export default function CreatorDetail() {
             </Typography>
             
             <Grid container spacing={2}>
-              {creator.tags.length > 0 && (
+              {(creator.tags || []).length > 0 && (
                 <Grid item xs={12} md={6}>
                   <Typography variant="body2" color="textSecondary" sx={{ mb: 1.5, fontWeight: 600 }}>
                     Tags
                   </Typography>
                   <Box display="flex" gap={1} flexWrap="wrap">
-                    {creator.tags.map((tag) => (
+                    {(creator.tags || []).map((tag) => (
                       <Chip 
                         key={tag} 
                         label={tag} 
@@ -361,7 +361,7 @@ export default function CreatorDetail() {
               )}
 
               {creator.notes && (
-                <Grid item xs={12} md={creator.tags.length > 0 ? 6 : 12}>
+                <Grid item xs={12} md={(creator.tags || []).length > 0 ? 6 : 12}>
                   <Typography variant="body2" color="textSecondary" sx={{ mb: 1.5, fontWeight: 600 }}>
                     Notes
                   </Typography>
@@ -619,17 +619,17 @@ export default function CreatorDetail() {
           <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
             <AccessTimeIcon sx={{ mr: 1, color: '#F16524' }} />
             Recent Interactions
-            {creator.interactions && creator.interactions.length > 0 && (
+            {(creator.interactions || []).length > 0 && (
               <Chip 
-                label={creator.interactions.length} 
+                label={(creator.interactions || []).length} 
                 size="small"
                 sx={{ ml: 1, bgcolor: '#F1652420', color: '#F16524' }}
               />
             )}
           </Typography>
-          {creator.interactions && creator.interactions.length > 0 ? (
+          {(creator.interactions || []).length > 0 ? (
             <Box>
-              {creator.interactions.map((interaction: any, index) => (
+              {(creator.interactions || []).map((interaction: any, index) => (
                 <Box 
                   key={interaction.id} 
                   sx={{ 
@@ -637,7 +637,7 @@ export default function CreatorDetail() {
                     alignItems: 'flex-start',
                     py: 2,
                     px: 1,
-                    borderBottom: index < creator.interactions.length - 1 ? '1px solid #f0f0f0' : 'none',
+                    borderBottom: index < (creator.interactions || []).length - 1 ? '1px solid #f0f0f0' : 'none',
                     '&:hover': {
                       bgcolor: '#f8f9fa',
                       borderRadius: 1
