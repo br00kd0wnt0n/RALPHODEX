@@ -74,16 +74,25 @@ class SocialMediaFetcher {
 
   // Fetch Instagram posts using RapidAPI Instagram scraper
   async fetchInstagramPosts(handle) {
+    console.log('🔍 [INSTAGRAM] Starting fetch for handle:', handle);
+    
     try {
       const username = this.extractInstagramUsername(handle);
-      if (!username) return [];
-
-      const rapidApiKey = process.env.RAPIDAPI_KEY;
-      if (!rapidApiKey) {
-        console.log('RapidAPI key not configured for Instagram scraping');
+      console.log('🔍 [INSTAGRAM] Extracted username:', username);
+      
+      if (!username) {
+        console.log('❌ [INSTAGRAM] No valid username extracted from handle:', handle);
         return [];
       }
 
+      const rapidApiKey = process.env.RAPIDAPI_KEY;
+      if (!rapidApiKey) {
+        console.log('❌ [INSTAGRAM] RapidAPI key not configured for Instagram scraping');
+        return [];
+      }
+      console.log('✅ [INSTAGRAM] RapidAPI key found:', rapidApiKey ? 'Yes' : 'No');
+
+      console.log('📡 [INSTAGRAM] Making API request to Instagram scraper...');
       const response = await axios.get('https://instagram-scraper-api2.p.rapidapi.com/v1/posts', {
         params: {
           username_or_id_or_url: username,
@@ -95,8 +104,16 @@ class SocialMediaFetcher {
         }
       });
 
+      console.log('📊 [INSTAGRAM] API Response Status:', response.status);
+      console.log('📊 [INSTAGRAM] API Response Data Structure:', {
+        hasData: !!response.data,
+        hasDataField: !!(response.data && response.data.data),
+        hasItems: !!(response.data && response.data.data && response.data.data.items),
+        itemsCount: response.data?.data?.items?.length || 0
+      });
+
       if (response.data && response.data.data && response.data.data.items) {
-        return response.data.data.items.slice(0, 3).map(item => ({
+        const posts = response.data.data.items.slice(0, 3).map(item => ({
           id: item.id,
           platform: 'instagram',
           caption: item.caption?.text || 'No caption',
@@ -107,31 +124,58 @@ class SocialMediaFetcher {
           postedAt: new Date(item.taken_at * 1000),
           type: item.media_type === 1 ? 'image' : 'video'
         }));
+        
+        console.log('✅ [INSTAGRAM] Successfully processed', posts.length, 'posts');
+        console.log('📋 [INSTAGRAM] Posts summary:', posts.map(p => ({
+          id: p.id,
+          caption: p.caption.substring(0, 50) + '...',
+          likes: p.likes,
+          type: p.type
+        })));
+        
+        return posts;
       }
 
+      console.log('⚠️ [INSTAGRAM] No posts found in API response');
       return [];
     } catch (error) {
-      console.error('Error fetching Instagram posts:', error);
+      console.error('❌ [INSTAGRAM] Error fetching Instagram posts:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
       return [];
     }
   }
 
   // Fetch YouTube videos using YouTube Data API v3
   async fetchYouTubePosts(handle) {
+    console.log('🔍 [YOUTUBE] Starting fetch for handle:', handle);
+    
     try {
       const channelId = this.extractYouTubeHandle(handle);
-      if (!channelId) return [];
+      console.log('🔍 [YOUTUBE] Extracted channel ID:', channelId);
+      
+      if (!channelId) {
+        console.log('❌ [YOUTUBE] No valid channel ID extracted from handle:', handle);
+        return [];
+      }
 
       const apiKey = process.env.YOUTUBE_API_KEY;
       if (!apiKey) {
-        console.log('YouTube API key not configured');
+        console.log('❌ [YOUTUBE] YouTube API key not configured');
         return [];
       }
+      console.log('✅ [YOUTUBE] YouTube API key found:', apiKey ? 'Yes' : 'No');
 
       // First, get the channel ID if we have a username
       let actualChannelId = channelId;
       if (!channelId.startsWith('UC')) {
+        console.log('🔍 [YOUTUBE] Channel ID does not start with UC, resolving username/handle...');
+        
         try {
+          console.log('📡 [YOUTUBE] Attempting forUsername lookup...');
           const channelResponse = await axios.get(`https://www.googleapis.com/youtube/v3/channels`, {
             params: {
               key: apiKey,
@@ -140,10 +184,17 @@ class SocialMediaFetcher {
             }
           });
           
+          console.log('📊 [YOUTUBE] forUsername response:', {
+            status: channelResponse.status,
+            itemsCount: channelResponse.data.items?.length || 0
+          });
+          
           if (channelResponse.data.items && channelResponse.data.items.length > 0) {
             actualChannelId = channelResponse.data.items[0].id;
+            console.log('✅ [YOUTUBE] Found channel ID via forUsername:', actualChannelId);
           } else {
             // Try searching by custom URL/handle
+            console.log('📡 [YOUTUBE] forUsername failed, trying search...');
             const searchResponse = await axios.get(`https://www.googleapis.com/youtube/v3/search`, {
               params: {
                 key: apiKey,
@@ -154,17 +205,32 @@ class SocialMediaFetcher {
               }
             });
             
+            console.log('📊 [YOUTUBE] Search response:', {
+              status: searchResponse.status,
+              itemsCount: searchResponse.data.items?.length || 0
+            });
+            
             if (searchResponse.data.items && searchResponse.data.items.length > 0) {
               actualChannelId = searchResponse.data.items[0].snippet.channelId;
+              console.log('✅ [YOUTUBE] Found channel ID via search:', actualChannelId);
+            } else {
+              console.log('❌ [YOUTUBE] Could not resolve channel ID for handle:', channelId);
             }
           }
         } catch (error) {
-          console.error('Error finding YouTube channel:', error);
+          console.error('❌ [YOUTUBE] Error finding YouTube channel:', {
+            message: error.message,
+            status: error.response?.status,
+            statusText: error.response?.statusText
+          });
           return [];
         }
+      } else {
+        console.log('✅ [YOUTUBE] Using provided channel ID:', actualChannelId);
       }
 
       // Get recent videos from the channel
+      console.log('📡 [YOUTUBE] Fetching recent videos for channel:', actualChannelId);
       const response = await axios.get(`https://www.googleapis.com/youtube/v3/search`, {
         params: {
           key: apiKey,
@@ -176,15 +242,27 @@ class SocialMediaFetcher {
         }
       });
 
+      console.log('📊 [YOUTUBE] Search videos response:', {
+        status: response.status,
+        itemsCount: response.data.items?.length || 0
+      });
+
       if (response.data && response.data.items) {
         // Get video statistics for likes/comments
         const videoIds = response.data.items.map(item => item.id.videoId).join(',');
+        console.log('📡 [YOUTUBE] Fetching video statistics for IDs:', videoIds);
+        
         const statsResponse = await axios.get(`https://www.googleapis.com/youtube/v3/videos`, {
           params: {
             key: apiKey,
             id: videoIds,
             part: 'statistics,contentDetails'
           }
+        });
+
+        console.log('📊 [YOUTUBE] Video stats response:', {
+          status: statsResponse.status,
+          itemsCount: statsResponse.data.items?.length || 0
         });
 
         const statsMap = {};
@@ -194,7 +272,7 @@ class SocialMediaFetcher {
           });
         }
 
-        return response.data.items.map(item => {
+        const posts = response.data.items.map(item => {
           const stats = statsMap[item.id.videoId];
           return {
             id: item.id.videoId,
@@ -209,27 +287,52 @@ class SocialMediaFetcher {
             duration: stats ? stats.contentDetails.duration : null
           };
         });
+
+        console.log('✅ [YOUTUBE] Successfully processed', posts.length, 'posts');
+        console.log('📋 [YOUTUBE] Posts summary:', posts.map(p => ({
+          id: p.id,
+          title: p.caption.substring(0, 50) + '...',
+          likes: p.likes,
+          views: stats ? stats.statistics?.viewCount : 'N/A'
+        })));
+
+        return posts;
       }
 
+      console.log('⚠️ [YOUTUBE] No videos found in API response');
       return [];
     } catch (error) {
-      console.error('Error fetching YouTube posts:', error);
+      console.error('❌ [YOUTUBE] Error fetching YouTube posts:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
       return [];
     }
   }
 
   // Fetch TikTok posts using RapidAPI TikTok scraper
   async fetchTikTokPosts(handle) {
+    console.log('🔍 [TIKTOK] Starting fetch for handle:', handle);
+    
     try {
       const username = this.extractTikTokUsername(handle);
-      if (!username) return [];
-
-      const rapidApiKey = process.env.RAPIDAPI_KEY;
-      if (!rapidApiKey) {
-        console.log('RapidAPI key not configured for TikTok scraping');
+      console.log('🔍 [TIKTOK] Extracted username:', username);
+      
+      if (!username) {
+        console.log('❌ [TIKTOK] No valid username extracted from handle:', handle);
         return [];
       }
 
+      const rapidApiKey = process.env.RAPIDAPI_KEY;
+      if (!rapidApiKey) {
+        console.log('❌ [TIKTOK] RapidAPI key not configured for TikTok scraping');
+        return [];
+      }
+      console.log('✅ [TIKTOK] RapidAPI key found:', rapidApiKey ? 'Yes' : 'No');
+
+      console.log('📡 [TIKTOK] Making API request to TikTok scraper...');
       const response = await axios.get('https://tiktok-scraper7.p.rapidapi.com/user/posts', {
         params: {
           username: username,
@@ -241,8 +344,16 @@ class SocialMediaFetcher {
         }
       });
 
+      console.log('📊 [TIKTOK] API Response Status:', response.status);
+      console.log('📊 [TIKTOK] API Response Data Structure:', {
+        hasData: !!response.data,
+        hasDataField: !!(response.data && response.data.data),
+        hasVideos: !!(response.data && response.data.data && response.data.data.videos),
+        videosCount: response.data?.data?.videos?.length || 0
+      });
+
       if (response.data && response.data.data && response.data.data.videos) {
-        return response.data.data.videos.slice(0, 3).map(video => ({
+        const posts = response.data.data.videos.slice(0, 3).map(video => ({
           id: video.id,
           platform: 'tiktok',
           caption: video.desc || 'No caption',
@@ -254,42 +365,75 @@ class SocialMediaFetcher {
           type: 'video',
           duration: video.video?.duration ? `${Math.floor(video.video.duration / 1000)}s` : null
         }));
+
+        console.log('✅ [TIKTOK] Successfully processed', posts.length, 'posts');
+        console.log('📋 [TIKTOK] Posts summary:', posts.map(p => ({
+          id: p.id,
+          caption: p.caption.substring(0, 50) + '...',
+          likes: p.likes,
+          duration: p.duration
+        })));
+
+        return posts;
       }
 
+      console.log('⚠️ [TIKTOK] No videos found in API response');
       return [];
     } catch (error) {
-      console.error('Error fetching TikTok posts:', error);
+      console.error('❌ [TIKTOK] Error fetching TikTok posts:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
       return [];
     }
   }
 
   // Fetch Twitter posts using Twitter API v2
   async fetchTwitterPosts(handle) {
+    console.log('🔍 [TWITTER] Starting fetch for handle:', handle);
+    
     try {
       const username = this.extractTwitterUsername(handle);
-      if (!username) return [];
-
-      const bearerToken = process.env.TWITTER_BEARER_TOKEN;
-      if (!bearerToken) {
-        console.log('Twitter Bearer Token not configured');
+      console.log('🔍 [TWITTER] Extracted username:', username);
+      
+      if (!username) {
+        console.log('❌ [TWITTER] No valid username extracted from handle:', handle);
         return [];
       }
 
+      const bearerToken = process.env.TWITTER_BEARER_TOKEN;
+      if (!bearerToken) {
+        console.log('❌ [TWITTER] Twitter Bearer Token not configured');
+        return [];
+      }
+      console.log('✅ [TWITTER] Twitter Bearer Token found:', bearerToken ? 'Yes' : 'No');
+
       // Get user ID from username
+      console.log('📡 [TWITTER] Looking up user ID for username:', username);
       const userResponse = await axios.get(`https://api.twitter.com/2/users/by/username/${username}`, {
         headers: {
           'Authorization': `Bearer ${bearerToken}`
         }
       });
 
+      console.log('📊 [TWITTER] User lookup response:', {
+        status: userResponse.status,
+        hasData: !!userResponse.data,
+        hasUserData: !!(userResponse.data && userResponse.data.data)
+      });
+
       if (!userResponse.data || !userResponse.data.data) {
-        console.log(`Twitter user not found: ${username}`);
+        console.log('❌ [TWITTER] Twitter user not found:', username);
         return [];
       }
 
       const userId = userResponse.data.data.id;
+      console.log('✅ [TWITTER] Found user ID:', userId);
       
       // Get user's recent tweets
+      console.log('📡 [TWITTER] Fetching recent tweets for user ID:', userId);
       const tweetsResponse = await axios.get(`https://api.twitter.com/2/users/${userId}/tweets`, {
         headers: {
           'Authorization': `Bearer ${bearerToken}`
@@ -302,7 +446,16 @@ class SocialMediaFetcher {
         }
       });
 
+      console.log('📊 [TWITTER] Tweets response:', {
+        status: tweetsResponse.status,
+        hasData: !!tweetsResponse.data,
+        hasTweets: !!(tweetsResponse.data && tweetsResponse.data.data),
+        tweetsCount: tweetsResponse.data?.data?.length || 0,
+        hasMedia: !!(tweetsResponse.data?.includes?.media)
+      });
+
       if (!tweetsResponse.data || !tweetsResponse.data.data) {
+        console.log('⚠️ [TWITTER] No tweets found for user');
         return [];
       }
 
@@ -312,9 +465,10 @@ class SocialMediaFetcher {
         tweetsResponse.data.includes.media.forEach(media => {
           mediaMap[media.media_key] = media;
         });
+        console.log('📊 [TWITTER] Found media attachments:', Object.keys(mediaMap).length);
       }
       
-      return tweetsResponse.data.data.map(tweet => {
+      const posts = tweetsResponse.data.data.map(tweet => {
         let mediaUrl = null;
         
         // Check for media attachments
@@ -338,35 +492,85 @@ class SocialMediaFetcher {
           type: mediaUrl ? 'image' : 'text'
         };
       });
+
+      console.log('✅ [TWITTER] Successfully processed', posts.length, 'posts');
+      console.log('📋 [TWITTER] Posts summary:', posts.map(p => ({
+        id: p.id,
+        text: p.caption.substring(0, 50) + '...',
+        likes: p.likes,
+        hasMedia: !!p.mediaUrl
+      })));
+
+      return posts;
     } catch (error) {
-      console.error('Error fetching Twitter posts:', error);
+      console.error('❌ [TWITTER] Error fetching Twitter posts:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
       return [];
     }
   }
 
   // Main function to fetch posts from all platforms for a creator
   async fetchCreatorPosts(creator) {
+    console.log('🚀 [MAIN] Starting social media fetch for creator:', creator.full_name, `(ID: ${creator.id})`);
+    console.log('📱 [MAIN] Available platforms:', {
+      instagram: creator.instagram || 'Not configured',
+      youtube: creator.youtube || 'Not configured', 
+      tiktok: creator.tiktok || 'Not configured',
+      twitter: creator.twitter || 'Not configured'
+    });
+    
     const posts = [];
     
     try {
       // Fetch from all available platforms
-      const [instagramPosts, youtubePosts, tiktokPosts, twitterPosts] = await Promise.all([
-        creator.instagram ? this.fetchInstagramPosts(creator.instagram) : [],
-        creator.youtube ? this.fetchYouTubePosts(creator.youtube) : [],
-        creator.tiktok ? this.fetchTikTokPosts(creator.tiktok) : [],
-        creator.twitter ? this.fetchTwitterPosts(creator.twitter) : []
-      ]);
+      console.log('📡 [MAIN] Starting parallel fetch from all platforms...');
+      const fetchPromises = [
+        creator.instagram ? this.fetchInstagramPosts(creator.instagram) : Promise.resolve([]),
+        creator.youtube ? this.fetchYouTubePosts(creator.youtube) : Promise.resolve([]),
+        creator.tiktok ? this.fetchTikTokPosts(creator.tiktok) : Promise.resolve([]),
+        creator.twitter ? this.fetchTwitterPosts(creator.twitter) : Promise.resolve([])
+      ];
+
+      const [instagramPosts, youtubePosts, tiktokPosts, twitterPosts] = await Promise.all(fetchPromises);
+
+      console.log('📊 [MAIN] Platform results:', {
+        instagram: instagramPosts.length,
+        youtube: youtubePosts.length,
+        tiktok: tiktokPosts.length,
+        twitter: twitterPosts.length
+      });
 
       posts.push(...instagramPosts, ...youtubePosts, ...tiktokPosts, ...twitterPosts);
 
       // Sort by posted date (most recent first)
       posts.sort((a, b) => new Date(b.postedAt) - new Date(a.postedAt));
 
+      console.log('✅ [MAIN] Total posts collected:', posts.length);
+      console.log('📋 [MAIN] Final posts summary:', posts.slice(0, 9).map(p => ({
+        platform: p.platform,
+        id: p.id,
+        caption: p.caption.substring(0, 30) + '...',
+        likes: p.likes,
+        postedAt: p.postedAt.toISOString().split('T')[0]
+      })));
+
       // Return top 9 posts (3 per platform max)
-      return posts.slice(0, 9);
+      const finalPosts = posts.slice(0, 9);
+      console.log('🎯 [MAIN] Returning', finalPosts.length, 'posts to API');
+      
+      return finalPosts;
       
     } catch (error) {
-      console.error('Error fetching creator posts:', error);
+      console.error('❌ [MAIN] Error fetching creator posts:', {
+        creatorId: creator.id,
+        creatorName: creator.full_name,
+        error: error.message,
+        stack: error.stack
+      });
       return [];
     }
   }

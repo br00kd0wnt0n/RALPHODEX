@@ -194,17 +194,59 @@ const creatorController = {
   },
 
   async getCreatorPosts(req, res) {
+    const startTime = Date.now();
+    console.log('🎬 [API] POST /api/creators/:id/posts called');
+    console.log('🎬 [API] Creator ID:', req.params.id);
+    console.log('🎬 [API] Request headers:', {
+      authorization: req.headers.authorization ? 'Bearer token present' : 'No auth token',
+      userAgent: req.headers['user-agent'],
+      origin: req.headers.origin
+    });
+
     try {
+      console.log('🔍 [API] Looking up creator in database...');
       const creator = await Creator.findByPk(req.params.id);
       
       if (!creator) {
+        console.log('❌ [API] Creator not found for ID:', req.params.id);
         return res.status(404).json({ error: 'Creator not found' });
       }
       
+      console.log('✅ [API] Creator found:', {
+        id: creator.id,
+        name: creator.full_name,
+        social_handles: {
+          instagram: creator.instagram || 'Not set',
+          youtube: creator.youtube || 'Not set',
+          tiktok: creator.tiktok || 'Not set',
+          twitter: creator.twitter || 'Not set'
+        }
+      });
+
+      // Check environment variables
+      console.log('🔑 [API] Environment variables check:', {
+        RAPIDAPI_KEY: process.env.RAPIDAPI_KEY ? 'Set' : 'Not set',
+        YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY ? 'Set' : 'Not set',
+        TWITTER_BEARER_TOKEN: process.env.TWITTER_BEARER_TOKEN ? 'Set' : 'Not set'
+      });
+      
       // Fetch recent posts from social media platforms
+      console.log('📡 [API] Calling socialMediaFetcher.fetchCreatorPosts...');
       const posts = await socialMediaFetcher.fetchCreatorPosts(creator);
       
-      res.json({
+      const elapsed = Date.now() - startTime;
+      console.log('✅ [API] Social media fetch completed in', elapsed, 'ms');
+      console.log('📊 [API] Final results:', {
+        total_posts: posts.length,
+        platforms_with_posts: [...new Set(posts.map(p => p.platform))],
+        first_post_sample: posts.length > 0 ? {
+          platform: posts[0].platform,
+          id: posts[0].id,
+          caption_preview: posts[0].caption.substring(0, 50) + '...'
+        } : 'No posts'
+      });
+
+      const response = {
         creator_id: creator.id,
         creator_name: creator.full_name,
         platforms: {
@@ -216,9 +258,19 @@ const creatorController = {
         posts: posts,
         total_posts: posts.length,
         fetched_at: new Date().toISOString()
-      });
+      };
+
+      console.log('🚀 [API] Sending response with', posts.length, 'posts');
+      res.json(response);
     } catch (error) {
-      console.error('Error fetching creator posts:', error);
+      const elapsed = Date.now() - startTime;
+      console.error('❌ [API] Error in getCreatorPosts after', elapsed, 'ms:', {
+        creatorId: req.params.id,
+        error: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      
       res.status(500).json({ 
         error: 'Failed to fetch social media posts',
         message: error.message 
