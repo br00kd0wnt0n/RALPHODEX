@@ -72,40 +72,44 @@ class SocialMediaFetcher {
     return username;
   }
 
-  // Fetch Instagram posts using public endpoint (limited)
+  // Fetch Instagram posts using RapidAPI Instagram scraper
   async fetchInstagramPosts(handle) {
     try {
       const username = this.extractInstagramUsername(handle);
       if (!username) return [];
 
-      // Note: This is a simplified approach. Instagram's public API is limited.
-      // In a production environment, you'd want to use Instagram Basic Display API
-      // or a third-party service like RapidAPI's Instagram scraper
-      
-      return [
-        {
-          id: 'mock_ig_1',
-          platform: 'instagram',
-          caption: 'Sample Instagram post - API integration needed for real data',
-          mediaUrl: 'https://picsum.photos/300/300?random=1',
-          postUrl: `https://instagram.com/${username}`,
-          likes: 150,
-          comments: 12,
-          postedAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-          type: 'image'
+      const rapidApiKey = process.env.RAPIDAPI_KEY;
+      if (!rapidApiKey) {
+        console.log('RapidAPI key not configured for Instagram scraping');
+        return [];
+      }
+
+      const response = await axios.get('https://instagram-scraper-api2.p.rapidapi.com/v1/posts', {
+        params: {
+          username_or_id_or_url: username,
+          url_embed_safe: true
         },
-        {
-          id: 'mock_ig_2',
-          platform: 'instagram',
-          caption: 'Another sample post - integration with Instagram Basic Display API recommended',
-          mediaUrl: 'https://picsum.photos/300/300?random=1',
-          postUrl: `https://instagram.com/${username}`,
-          likes: 89,
-          comments: 5,
-          postedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-          type: 'image'
+        headers: {
+          'X-RapidAPI-Key': rapidApiKey,
+          'X-RapidAPI-Host': 'instagram-scraper-api2.p.rapidapi.com'
         }
-      ];
+      });
+
+      if (response.data && response.data.data && response.data.data.items) {
+        return response.data.data.items.slice(0, 3).map(item => ({
+          id: item.id,
+          platform: 'instagram',
+          caption: item.caption?.text || 'No caption',
+          mediaUrl: item.image_versions2?.candidates?.[0]?.url || item.video_versions?.[0]?.url,
+          postUrl: `https://instagram.com/p/${item.code}`,
+          likes: item.like_count || 0,
+          comments: item.comment_count || 0,
+          postedAt: new Date(item.taken_at * 1000),
+          type: item.media_type === 1 ? 'image' : 'video'
+        }));
+      }
+
+      return [];
     } catch (error) {
       console.error('Error fetching Instagram posts:', error);
       return [];
@@ -118,44 +122,53 @@ class SocialMediaFetcher {
       const channelId = this.extractYouTubeHandle(handle);
       if (!channelId) return [];
 
-      // Note: You'll need to add YOUTUBE_API_KEY to your environment variables
-      // const apiKey = process.env.YOUTUBE_API_KEY;
-      // if (!apiKey) return [];
+      const apiKey = process.env.YOUTUBE_API_KEY;
+      if (!apiKey) {
+        console.log('YouTube API key not configured');
+        return [];
+      }
 
-      // Mock data for now - replace with actual YouTube API call
-      return [
-        {
-          id: 'mock_yt_1',
-          platform: 'youtube',
-          caption: 'Sample YouTube video - YouTube Data API integration needed',
-          mediaUrl: 'https://picsum.photos/480/360?random=2',
-          postUrl: `https://youtube.com/watch?v=sample1`,
-          likes: 1250,
-          comments: 85,
-          postedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-          type: 'video',
-          duration: '5:23'
-        },
-        {
-          id: 'mock_yt_2',
-          platform: 'youtube',
-          caption: 'Another sample YouTube video',
-          mediaUrl: 'https://picsum.photos/480/360?random=2',
-          postUrl: `https://youtube.com/watch?v=sample2`,
-          likes: 892,
-          comments: 34,
-          postedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-          type: 'video',
-          duration: '3:45'
+      // First, get the channel ID if we have a username
+      let actualChannelId = channelId;
+      if (!channelId.startsWith('UC')) {
+        try {
+          const channelResponse = await axios.get(`https://www.googleapis.com/youtube/v3/channels`, {
+            params: {
+              key: apiKey,
+              forUsername: channelId.replace('@', ''),
+              part: 'id'
+            }
+          });
+          
+          if (channelResponse.data.items && channelResponse.data.items.length > 0) {
+            actualChannelId = channelResponse.data.items[0].id;
+          } else {
+            // Try searching by custom URL/handle
+            const searchResponse = await axios.get(`https://www.googleapis.com/youtube/v3/search`, {
+              params: {
+                key: apiKey,
+                q: channelId.replace('@', ''),
+                type: 'channel',
+                part: 'snippet',
+                maxResults: 1
+              }
+            });
+            
+            if (searchResponse.data.items && searchResponse.data.items.length > 0) {
+              actualChannelId = searchResponse.data.items[0].snippet.channelId;
+            }
+          }
+        } catch (error) {
+          console.error('Error finding YouTube channel:', error);
+          return [];
         }
-      ];
+      }
 
-      // Actual YouTube API implementation would look like this:
-      /*
+      // Get recent videos from the channel
       const response = await axios.get(`https://www.googleapis.com/youtube/v3/search`, {
         params: {
           key: apiKey,
-          channelId: channelId,
+          channelId: actualChannelId,
           part: 'snippet',
           order: 'date',
           maxResults: 3,
@@ -163,46 +176,87 @@ class SocialMediaFetcher {
         }
       });
 
-      return response.data.items.map(item => ({
-        id: item.id.videoId,
-        platform: 'youtube',
-        caption: item.snippet.title,
-        mediaUrl: item.snippet.thumbnails.medium.url,
-        postUrl: `https://youtube.com/watch?v=${item.id.videoId}`,
-        postedAt: new Date(item.snippet.publishedAt),
-        type: 'video'
-      }));
-      */
+      if (response.data && response.data.items) {
+        // Get video statistics for likes/comments
+        const videoIds = response.data.items.map(item => item.id.videoId).join(',');
+        const statsResponse = await axios.get(`https://www.googleapis.com/youtube/v3/videos`, {
+          params: {
+            key: apiKey,
+            id: videoIds,
+            part: 'statistics,contentDetails'
+          }
+        });
+
+        const statsMap = {};
+        if (statsResponse.data && statsResponse.data.items) {
+          statsResponse.data.items.forEach(item => {
+            statsMap[item.id] = item;
+          });
+        }
+
+        return response.data.items.map(item => {
+          const stats = statsMap[item.id.videoId];
+          return {
+            id: item.id.videoId,
+            platform: 'youtube',
+            caption: item.snippet.title,
+            mediaUrl: item.snippet.thumbnails.medium.url,
+            postUrl: `https://youtube.com/watch?v=${item.id.videoId}`,
+            likes: stats ? parseInt(stats.statistics.likeCount || 0) : 0,
+            comments: stats ? parseInt(stats.statistics.commentCount || 0) : 0,
+            postedAt: new Date(item.snippet.publishedAt),
+            type: 'video',
+            duration: stats ? stats.contentDetails.duration : null
+          };
+        });
+      }
+
+      return [];
     } catch (error) {
       console.error('Error fetching YouTube posts:', error);
       return [];
     }
   }
 
-  // Fetch TikTok posts (very limited without official API)
+  // Fetch TikTok posts using RapidAPI TikTok scraper
   async fetchTikTokPosts(handle) {
     try {
       const username = this.extractTikTokUsername(handle);
       if (!username) return [];
 
-      // TikTok's public API is very limited. Consider using:
-      // 1. TikTok Research API (requires approval)
-      // 2. Third-party scraping services
-      // 3. Puppeteer for web scraping (resource intensive)
+      const rapidApiKey = process.env.RAPIDAPI_KEY;
+      if (!rapidApiKey) {
+        console.log('RapidAPI key not configured for TikTok scraping');
+        return [];
+      }
 
-      return [
-        {
-          id: 'mock_tt_1',
-          platform: 'tiktok',
-          caption: 'Sample TikTok video - TikTok API integration needed',
-          mediaUrl: 'https://picsum.photos/300/400?random=3',
-          postUrl: `https://tiktok.com/@${username}`,
-          likes: 2500,
-          comments: 156,
-          postedAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-          type: 'video'
+      const response = await axios.get('https://tiktok-scraper7.p.rapidapi.com/user/posts', {
+        params: {
+          username: username,
+          count: 3
+        },
+        headers: {
+          'X-RapidAPI-Key': rapidApiKey,
+          'X-RapidAPI-Host': 'tiktok-scraper7.p.rapidapi.com'
         }
-      ];
+      });
+
+      if (response.data && response.data.data && response.data.data.videos) {
+        return response.data.data.videos.slice(0, 3).map(video => ({
+          id: video.id,
+          platform: 'tiktok',
+          caption: video.desc || 'No caption',
+          mediaUrl: video.video?.cover || video.video?.originCover,
+          postUrl: `https://tiktok.com/@${username}/video/${video.id}`,
+          likes: video.stats?.diggCount || 0,
+          comments: video.stats?.commentCount || 0,
+          postedAt: new Date(video.createTime * 1000),
+          type: 'video',
+          duration: video.video?.duration ? `${Math.floor(video.video.duration / 1000)}s` : null
+        }));
+      }
+
+      return [];
     } catch (error) {
       console.error('Error fetching TikTok posts:', error);
       return [];
@@ -215,57 +269,75 @@ class SocialMediaFetcher {
       const username = this.extractTwitterUsername(handle);
       if (!username) return [];
 
-      // Note: Twitter API v2 requires bearer token
-      // const bearerToken = process.env.TWITTER_BEARER_TOKEN;
-      // if (!bearerToken) return [];
+      const bearerToken = process.env.TWITTER_BEARER_TOKEN;
+      if (!bearerToken) {
+        console.log('Twitter Bearer Token not configured');
+        return [];
+      }
 
-      // Mock data for now
-      return [
-        {
-          id: 'mock_tw_1',
-          platform: 'twitter',
-          caption: 'Sample tweet - Twitter API v2 integration needed for real data',
-          mediaUrl: null,
-          postUrl: `https://twitter.com/${username}/status/1234567890`,
-          likes: 45,
-          comments: 8,
-          postedAt: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
-          type: 'text'
-        }
-      ];
-
-      // Actual Twitter API implementation:
-      /*
-      const response = await axios.get(`https://api.twitter.com/2/users/by/username/${username}`, {
+      // Get user ID from username
+      const userResponse = await axios.get(`https://api.twitter.com/2/users/by/username/${username}`, {
         headers: {
           'Authorization': `Bearer ${bearerToken}`
         }
       });
+
+      if (!userResponse.data || !userResponse.data.data) {
+        console.log(`Twitter user not found: ${username}`);
+        return [];
+      }
+
+      const userId = userResponse.data.data.id;
       
-      const userId = response.data.data.id;
-      
+      // Get user's recent tweets
       const tweetsResponse = await axios.get(`https://api.twitter.com/2/users/${userId}/tweets`, {
         headers: {
           'Authorization': `Bearer ${bearerToken}`
         },
         params: {
           max_results: 3,
-          'tweet.fields': 'created_at,public_metrics'
+          'tweet.fields': 'created_at,public_metrics,attachments',
+          'media.fields': 'preview_image_url,url,type',
+          'expansions': 'attachments.media_keys'
         }
       });
+
+      if (!tweetsResponse.data || !tweetsResponse.data.data) {
+        return [];
+      }
+
+      // Create media lookup map
+      const mediaMap = {};
+      if (tweetsResponse.data.includes && tweetsResponse.data.includes.media) {
+        tweetsResponse.data.includes.media.forEach(media => {
+          mediaMap[media.media_key] = media;
+        });
+      }
       
-      return tweetsResponse.data.data.map(tweet => ({
-        id: tweet.id,
-        platform: 'twitter',
-        caption: tweet.text,
-        mediaUrl: null,
-        postUrl: `https://twitter.com/${username}/status/${tweet.id}`,
-        likes: tweet.public_metrics.like_count,
-        comments: tweet.public_metrics.reply_count,
-        postedAt: new Date(tweet.created_at),
-        type: 'text'
-      }));
-      */
+      return tweetsResponse.data.data.map(tweet => {
+        let mediaUrl = null;
+        
+        // Check for media attachments
+        if (tweet.attachments && tweet.attachments.media_keys) {
+          const mediaKey = tweet.attachments.media_keys[0];
+          const media = mediaMap[mediaKey];
+          if (media) {
+            mediaUrl = media.preview_image_url || media.url;
+          }
+        }
+
+        return {
+          id: tweet.id,
+          platform: 'twitter',
+          caption: tweet.text,
+          mediaUrl: mediaUrl,
+          postUrl: `https://twitter.com/${username}/status/${tweet.id}`,
+          likes: tweet.public_metrics?.like_count || 0,
+          comments: tweet.public_metrics?.reply_count || 0,
+          postedAt: new Date(tweet.created_at),
+          type: mediaUrl ? 'image' : 'text'
+        };
+      });
     } catch (error) {
       console.error('Error fetching Twitter posts:', error);
       return [];
