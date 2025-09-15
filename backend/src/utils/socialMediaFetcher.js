@@ -92,52 +92,122 @@ class SocialMediaFetcher {
       }
       console.log('✅ [INSTAGRAM] RapidAPI key found:', rapidApiKey ? 'Yes' : 'No');
 
-      console.log('📡 [INSTAGRAM] Making API request to Instagram scraper...');
-      const response = await axios.get('https://instagram-scraper-api2.p.rapidapi.com/v1/posts', {
-        params: {
-          username_or_id_or_url: username,
-          url_embed_safe: true
-        },
-        headers: {
-          'X-RapidAPI-Key': rapidApiKey,
-          'X-RapidAPI-Host': 'instagram-scraper-api2.p.rapidapi.com'
+      console.log('📡 [INSTAGRAM] Making API request to Instagram120...');
+      // Try common Instagram120 API endpoints for user posts
+      let response;
+      try {
+        // Try endpoint 1: /api/instagram/user/{username}
+        console.log('🔍 [INSTAGRAM] Trying user endpoint...');
+        response = await axios.get(`https://instagram120.p.rapidapi.com/api/instagram/user/${username}`, {
+          headers: {
+            'X-RapidAPI-Key': rapidApiKey,
+            'X-RapidAPI-Host': 'instagram120.p.rapidapi.com'
+          }
+        });
+      } catch (error1) {
+        console.log('⚠️ [INSTAGRAM] User endpoint failed, trying posts endpoint...');
+        try {
+          // Try endpoint 2: /api/instagram/posts
+          response = await axios.get('https://instagram120.p.rapidapi.com/api/instagram/posts', {
+            params: {
+              username: username
+            },
+            headers: {
+              'X-RapidAPI-Key': rapidApiKey,
+              'X-RapidAPI-Host': 'instagram120.p.rapidapi.com'
+            }
+          });
+        } catch (error2) {
+          console.log('⚠️ [INSTAGRAM] Posts endpoint failed, trying profile endpoint...');
+          // Try endpoint 3: /api/instagram/profile
+          response = await axios.get('https://instagram120.p.rapidapi.com/api/instagram/profile', {
+            params: {
+              username: username,
+              include_posts: true
+            },
+            headers: {
+              'X-RapidAPI-Key': rapidApiKey,
+              'X-RapidAPI-Host': 'instagram120.p.rapidapi.com'
+            }
+          });
         }
-      });
+      }
 
       console.log('📊 [INSTAGRAM] API Response Status:', response.status);
-      console.log('📊 [INSTAGRAM] API Response Data Structure:', {
+      console.log('📊 [INSTAGRAM] Raw response structure:', {
         hasData: !!response.data,
-        hasDataField: !!(response.data && response.data.data),
-        hasItems: !!(response.data && response.data.data && response.data.data.items),
-        itemsCount: response.data?.data?.items?.length || 0
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        dataType: typeof response.data,
+        isArray: Array.isArray(response.data)
       });
 
-      if (response.data && response.data.data && response.data.data.items) {
-        const posts = response.data.data.items.slice(0, 3).map(item => ({
-          id: item.id,
-          platform: 'instagram',
-          caption: item.caption?.text || 'No caption',
-          mediaUrl: item.image_versions2?.candidates?.[0]?.url || item.video_versions?.[0]?.url,
-          postUrl: `https://instagram.com/p/${item.code}`,
-          likes: item.like_count || 0,
-          comments: item.comment_count || 0,
-          postedAt: new Date(item.taken_at * 1000),
-          type: item.media_type === 1 ? 'image' : 'video'
-        }));
+      let posts = [];
+      
+      // Try to extract posts from various possible response structures
+      if (response.data) {
+        let postsData = null;
         
-        console.log('✅ [INSTAGRAM] Successfully processed', posts.length, 'posts');
+        // Pattern 1: Direct array of posts
+        if (Array.isArray(response.data)) {
+          postsData = response.data;
+          console.log('📋 [INSTAGRAM] Using direct array format');
+        }
+        // Pattern 2: response.data.posts
+        else if (response.data.posts && Array.isArray(response.data.posts)) {
+          postsData = response.data.posts;
+          console.log('📋 [INSTAGRAM] Using data.posts format');
+        }
+        // Pattern 3: response.data.data.items (old format)
+        else if (response.data.data && response.data.data.items && Array.isArray(response.data.data.items)) {
+          postsData = response.data.data.items;
+          console.log('📋 [INSTAGRAM] Using data.data.items format');
+        }
+        // Pattern 4: response.data.media or similar
+        else if (response.data.media && Array.isArray(response.data.media)) {
+          postsData = response.data.media;
+          console.log('📋 [INSTAGRAM] Using data.media format');
+        }
+        // Pattern 5: response.data.items
+        else if (response.data.items && Array.isArray(response.data.items)) {
+          postsData = response.data.items;
+          console.log('📋 [INSTAGRAM] Using data.items format');
+        }
+
+        if (postsData && postsData.length > 0) {
+          console.log('📊 [INSTAGRAM] Found', postsData.length, 'posts, sample structure:', {
+            sampleKeys: Object.keys(postsData[0] || {}),
+            hasId: !!postsData[0]?.id,
+            hasCaption: !!postsData[0]?.caption,
+            hasMedia: !!postsData[0]?.media_url || !!postsData[0]?.image_versions2
+          });
+
+          posts = postsData.slice(0, 3).map(item => ({
+            id: item.id || item.pk || Math.random().toString(),
+            platform: 'instagram',
+            caption: item.caption?.text || item.caption || item.text || 'No caption',
+            mediaUrl: item.media_url || item.image_versions2?.candidates?.[0]?.url || item.video_versions?.[0]?.url,
+            postUrl: item.permalink || `https://instagram.com/p/${item.code || item.shortcode}`,
+            likes: item.like_count || item.likes || 0,
+            comments: item.comment_count || item.comments || 0,
+            postedAt: new Date(item.taken_at ? item.taken_at * 1000 : item.timestamp || Date.now()),
+            type: (item.media_type === 1 || item.type === 'image') ? 'image' : 'video'
+          }));
+        }
+      }
+        
+      console.log('✅ [INSTAGRAM] Successfully processed', posts.length, 'posts');
+      if (posts.length > 0) {
         console.log('📋 [INSTAGRAM] Posts summary:', posts.map(p => ({
           id: p.id,
           caption: p.caption.substring(0, 50) + '...',
           likes: p.likes,
           type: p.type
         })));
-        
-        return posts;
+      } else {
+        console.log('⚠️ [INSTAGRAM] No posts found in API response');
       }
-
-      console.log('⚠️ [INSTAGRAM] No posts found in API response');
-      return [];
+        
+      return posts;
     } catch (error) {
       console.error('❌ [INSTAGRAM] Error fetching Instagram posts:', {
         message: error.message,
