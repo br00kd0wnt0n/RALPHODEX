@@ -220,7 +220,7 @@ export default function RecentPosts({ creatorId }: RecentPostsProps) {
     );
   }
 
-  if (!postsData || postsData.posts.length === 0) {
+  if (!postsData || (postsData.posts || []).length === 0) {
     return (
       <Alert severity="info">
         No recent posts found for this creator. Make sure their social media handles are configured.
@@ -235,8 +235,8 @@ export default function RecentPosts({ creatorId }: RecentPostsProps) {
 
   // Filter posts by selected platform
   const filteredPosts = selectedPlatform === 'all' 
-    ? postsData.posts 
-    : postsData.posts.filter(post => post.platform === selectedPlatform);
+    ? (postsData.posts || []) 
+    : (postsData.posts || []).filter(post => post.platform === selectedPlatform);
 
   return (
     <Card sx={{ p: 3 }}>
@@ -285,13 +285,13 @@ export default function RecentPosts({ creatorId }: RecentPostsProps) {
         </Box>
       )}
 
-      {filteredPosts.length === 0 ? (
+      {(filteredPosts || []).length === 0 ? (
         <Alert severity="info">
           No posts found for the selected platform.
         </Alert>
       ) : (
         <Grid container spacing={3}>
-          {filteredPosts.slice(0, 3).map((post) => (
+          {(filteredPosts || []).slice(0, 3).map((post) => (
             <Grid item xs={12} sm={6} md={4} key={`${post.platform}-${post.id}`}>
               <PostCard post={post} />
             </Grid>
@@ -299,10 +299,10 @@ export default function RecentPosts({ creatorId }: RecentPostsProps) {
         </Grid>
       )}
 
-      {filteredPosts.length > 3 && (
+      {(filteredPosts || []).length > 3 && (
         <Box textAlign="center" mt={3}>
           <Typography variant="body2" color="textSecondary">
-            Showing 3 of {filteredPosts.length} posts
+            Showing 3 of {(filteredPosts || []).length} posts
           </Typography>
         </Box>
       )}
