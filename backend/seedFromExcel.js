@@ -41,6 +41,32 @@ function parseCreatorData(rawData) {
     const engagementRate = audienceSize > 1000000 ? 
       (Math.random() * 3 + 2) : // 2-5% for large accounts
       (Math.random() * 5 + 3); // 3-8% for smaller accounts
+
+    // Generate demographics for META filter (simulate realistic demographics)
+    const generateDemographics = (location, audienceSize) => {
+      // Base demographics influenced by location and audience size
+      const isUsBased = location && location.toLowerCase().includes('us');
+      const isLargeAccount = audienceSize > 100000;
+      
+      return {
+        young_adult_percentage: Math.round(Math.random() * 40 + 20), // 20-60%
+        us_followers_percentage: isUsBased ? 
+          Math.round(Math.random() * 30 + 50) : // 50-80% for US creators
+          Math.round(Math.random() * 20 + 10),   // 10-30% for others
+        age_brackets: {
+          '18-24': Math.round(Math.random() * 20 + 20), // 20-40%
+          '25-34': Math.round(Math.random() * 30 + 25), // 25-55%
+          '35-44': Math.round(Math.random() * 20 + 15), // 15-35%
+          '45+': Math.round(Math.random() * 15 + 5)     // 5-20%
+        },
+        countries: {
+          'US': isUsBased ? Math.round(Math.random() * 30 + 50) : Math.round(Math.random() * 20 + 10),
+          'Canada': Math.round(Math.random() * 10 + 5),
+          'UK': Math.round(Math.random() * 10 + 5),
+          'Other': Math.round(Math.random() * 20 + 20)
+        }
+      };
+    };
     
     // Extract other fields
     const niche = row.__EMPTY_1 || '';

@@ -59,22 +59,41 @@ export default function CreateCreatorForm({ onClose, onSuccess }: CreateCreatorF
     tiktok: '',
     youtube: '',
     twitter: '',
+    facebook: '',
+    facebook_followers: '',
     primary_content_type: '',
     audience_size: '',
     engagement_rate: '',
     source_of_contact: '',
     notes: '',
     verified: false,
+    demographics: {
+      young_adult_percentage: '',
+      us_followers_percentage: '',
+    },
   });
   const [tags, setTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    
+    // Handle demographics fields specially
+    if (name.startsWith('demographics.')) {
+      const field = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        demographics: {
+          ...prev.demographics,
+          [field]: value,
+        },
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,12 +105,20 @@ export default function CreateCreatorForm({ onClose, onSuccess }: CreateCreatorF
         ...formData,
         audience_size: formData.audience_size ? parseInt(formData.audience_size) : 0,
         engagement_rate: formData.engagement_rate ? parseFloat(formData.engagement_rate) : 0,
+        facebook_followers: formData.facebook_followers ? parseInt(formData.facebook_followers) : 0,
+        demographics: {
+          young_adult_percentage: formData.demographics.young_adult_percentage ? parseInt(formData.demographics.young_adult_percentage) : 0,
+          us_followers_percentage: formData.demographics.us_followers_percentage ? parseInt(formData.demographics.us_followers_percentage) : 0,
+          age_brackets: {},
+          countries: {},
+        },
         tags,
         social_handles: {
           instagram: formData.instagram,
           tiktok: formData.tiktok,
           youtube: formData.youtube,
           twitter: formData.twitter,
+          facebook: formData.facebook,
         },
       };
 
@@ -192,6 +219,56 @@ export default function CreateCreatorForm({ onClose, onSuccess }: CreateCreatorF
               value={formData.twitter}
               onChange={handleChange}
               InputProps={{ startAdornment: '@' }}
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              name="facebook"
+              label="Facebook"
+              fullWidth
+              value={formData.facebook}
+              onChange={handleChange}
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              name="facebook_followers"
+              label="Facebook Followers"
+              type="number"
+              fullWidth
+              value={formData.facebook_followers}
+              onChange={handleChange}
+              helperText="Required for META filter"
+            />
+          </Grid>
+          
+          <Grid item xs={12}>
+            <Typography variant="subtitle2" gutterBottom>
+              Demographics (for META Filter)
+            </Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              name="demographics.young_adult_percentage"
+              label="Young Adult Audience (%)"
+              type="number"
+              inputProps={{ min: 0, max: 100 }}
+              fullWidth
+              value={formData.demographics.young_adult_percentage}
+              onChange={handleChange}
+              helperText="% of audience aged 18-34"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              name="demographics.us_followers_percentage"
+              label="US Followers (%)"
+              type="number"
+              inputProps={{ min: 0, max: 100 }}
+              fullWidth
+              value={formData.demographics.us_followers_percentage}
+              onChange={handleChange}
+              helperText="% of audience in United States"
             />
           </Grid>
           
