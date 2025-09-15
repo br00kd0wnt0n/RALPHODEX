@@ -9,6 +9,9 @@ const router = express.Router();
 router.get('/', creatorController.getAllCreators);
 router.get('/:id', creatorController.getCreatorById);
 
+// Social media endpoints (temporarily public for testing logging)
+router.get('/:id/posts', creatorController.getCreatorPosts);
+
 // Protected routes (auth required for modifications)
 router.use(authMiddleware);
 router.post('/', validationMiddleware.validateCreator, creatorController.createCreator);
@@ -19,8 +22,5 @@ router.post('/:id/interactions', validationMiddleware.validateInteraction, creat
 // AI-powered endpoints
 router.get('/:id/insights', creatorController.getCreatorInsights);
 router.get('/:id/recommendations', creatorController.getCreatorRecommendations);
-
-// Social media endpoints
-router.get('/:id/posts', creatorController.getCreatorPosts);
 
 module.exports = router;
