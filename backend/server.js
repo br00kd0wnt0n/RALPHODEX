@@ -16,8 +16,7 @@ const corsOptions = {
   origin: [
     'http://localhost:3000',
     'http://localhost:3001',
-    'https://ralphodex.up.railway.app',
-    'https://ralphodex-backend.up.railway.app'
+    'https://ralphodex.up.railway.app'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
