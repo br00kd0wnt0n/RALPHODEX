@@ -1,7 +1,0 @@
-# Exclude everything except backend directory
-*
-!backend/
-!backend/**
-!backend.Dockerfile
-!railway.json
-!backend/railway.json
