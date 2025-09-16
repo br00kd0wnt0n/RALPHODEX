@@ -24,7 +24,7 @@ COPY frontend/ ./
 ENV SKIP_PREFLIGHT_CHECK=true
 ENV TSC_COMPILE_ON_ERROR=true
 ENV GENERATE_SOURCEMAP=false
-ENV REACT_APP_API_URL=https://backend-production-a0a1.up.railway.app/api
+ENV REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:3001/api}
 
 # Build the application
 RUN SKIP_PREFLIGHT_CHECK=true TSC_COMPILE_ON_ERROR=true GENERATE_SOURCEMAP=false CI=false npm run build
