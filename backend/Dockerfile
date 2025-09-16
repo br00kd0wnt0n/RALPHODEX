@@ -8,10 +8,10 @@ WORKDIR /app
 RUN apk add --no-cache dumb-init
 
 # Copy package files
-COPY package*.json ./
+COPY package.json package-lock.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # Copy source code
 COPY . .
