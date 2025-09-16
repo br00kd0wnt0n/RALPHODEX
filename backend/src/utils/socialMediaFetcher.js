@@ -215,6 +215,15 @@ class SocialMediaFetcher {
         statusText: error.response?.statusText,
         data: error.response?.data
       });
+
+      // Check for subscription limitations
+      if (error.response?.data?.message && 
+          (error.response.data.message.includes('endpoint is disabled') || 
+           error.response.data.message.includes('does not exist'))) {
+        console.log('⚠️ [INSTAGRAM] Instagram120 API subscription doesn\'t include required endpoints');
+        console.log('💡 [INSTAGRAM] Tip: Check your RapidAPI subscription to enable Instagram user/posts endpoints');
+      }
+      
       return [];
     }
   }
