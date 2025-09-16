@@ -1,4 +1,4 @@
-# Root Dockerfile for Backend Service
+# Root Dockerfile for Backend Service - Railway Deployment
 FROM node:20-alpine
 
 # Set working directory
