@@ -40,6 +40,9 @@ services:
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
       JWT_EXPIRES_IN: 7d
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      RAPIDAPI_KEY: ${RAPIDAPI_KEY:-}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      TWITTER_BEARER_TOKEN: ${TWITTER_BEARER_TOKEN:-}
     ports:
       - "3001:3001"
     depends_on:

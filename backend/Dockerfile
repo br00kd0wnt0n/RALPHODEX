@@ -13,6 +13,9 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci --only=production
 
+# Create logs directory
+RUN mkdir -p logs && chown nodejs:nodejs logs
+
 # Copy source code
 COPY . .
 

@@ -6,6 +6,7 @@ const { sequelize } = require('./src/config/database');
 const creatorRoutes = require('./src/routes/creatorRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 const errorHandler = require('./src/utils/errorHandler');
+const { logger, requestLogger } = require('./src/utils/logger');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -14,15 +15,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] ${req.method} ${req.url}`);
-  console.log('Headers:', JSON.stringify(req.headers, null, 2));
-  if (req.body && Object.keys(req.body).length > 0) {
-    console.log('Body:', JSON.stringify(req.body, null, 2));
-  }
-  next();
-});
+// Use structured logging middleware
+app.use(requestLogger);
 
 app.use('/api/creators', creatorRoutes);
 app.use('/api/auth', authRoutes);
@@ -31,21 +25,50 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Creator Rolodex API is running' });
 });
 
+// Test endpoint for logging and API keys
+app.get('/api/test', (req, res) => {
+  logger.info('Test endpoint called', {
+    timestamp: new Date().toISOString(),
+    ip: req.ip,
+    userAgent: req.get('User-Agent')
+  });
+  
+  res.json({
+    status: 'OK',
+    message: 'Test endpoint working',
+    timestamp: new Date().toISOString(),
+    environment: {
+      nodeEnv: process.env.NODE_ENV,
+      hasRapidApiKey: !!process.env.RAPIDAPI_KEY,
+      hasYouTubeKey: !!process.env.YOUTUBE_API_KEY,
+      hasTwitterToken: !!process.env.TWITTER_BEARER_TOKEN,
+      hasOpenAIKey: !!process.env.OPENAI_API_KEY
+    }
+  });
+});
+
 app.use(errorHandler);
 
 const startServer = async () => {
   try {
     await sequelize.authenticate();
-    console.log('Database connection established successfully.');
+    logger.info('Database connection established successfully');
     
     await sequelize.sync({ alter: true });
-    console.log('Database synchronized.');
+    logger.info('Database synchronized');
     
     app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+      logger.info(`Server running on port ${PORT}`, {
+        port: PORT,
+        nodeEnv: process.env.NODE_ENV,
+        hasRapidApiKey: !!process.env.RAPIDAPI_KEY,
+        hasYouTubeKey: !!process.env.YOUTUBE_API_KEY,
+        hasTwitterToken: !!process.env.TWITTER_BEARER_TOKEN
+      });
     });
   } catch (error) {
-    console.error('Unable to start server:', error);
+    logger.error('Unable to start server', { error: error.message, stack: error.stack });
+    process.exit(1);
   }
 };
 

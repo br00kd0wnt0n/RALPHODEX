@@ -1,5 +1,6 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
+const { logger } = require('./logger');
 
 class SocialMediaFetcher {
   

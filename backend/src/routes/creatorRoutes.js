@@ -2,15 +2,19 @@ const express = require('express');
 const creatorController = require('../controllers/creatorController');
 const authMiddleware = require('../middleware/authMiddleware');
 const validationMiddleware = require('../middleware/validationMiddleware');
+const { apiLimiter, socialMediaLimiter } = require('../middleware/rateLimiting');
 
 const router = express.Router();
+
+// Apply general rate limiting to all routes
+router.use(apiLimiter);
 
 // Public routes (no auth required for viewing)
 router.get('/', creatorController.getAllCreators);
 router.get('/:id', creatorController.getCreatorById);
 
-// Social media endpoints (temporarily public for testing logging)
-router.get('/:id/posts', creatorController.getCreatorPosts);
+// Social media endpoints with strict rate limiting
+router.get('/:id/posts', socialMediaLimiter, creatorController.getCreatorPosts);
 
 // Protected routes (auth required for modifications)
 router.use(authMiddleware);
