@@ -1,4 +1,4 @@
-# Backend Dockerfile for Creator Rolodex
+# Backend Dockerfile for Railway deployment
 FROM node:20-alpine
 
 # Set working directory
@@ -7,14 +7,14 @@ WORKDIR /app
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
 
-# Copy package files
-COPY package*.json ./
+# Copy backend package files
+COPY backend/package*.json ./
 
 # Install dependencies
 RUN npm install --omit=dev
 
-# Copy source code
-COPY . .
+# Copy backend source code
+COPY backend/ ./
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
