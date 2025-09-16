@@ -8,7 +8,8 @@ WORKDIR /app
 RUN apk add --no-cache dumb-init
 
 # Copy backend package files
-COPY backend/package*.json ./
+COPY backend/package.json ./
+COPY backend/package-lock.json ./
 
 # Install dependencies
 RUN npm install --omit=dev

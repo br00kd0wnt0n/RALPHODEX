@@ -1,0 +1,11 @@
+# Include backend directory and essential files
+*
+!backend/
+!backend/**
+!Dockerfile
+!railway.json
+!package.json
+!README.md
+!nginx.conf
+!frontend.Dockerfile
+!frontend.railway.json
