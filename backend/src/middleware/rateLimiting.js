@@ -1,5 +1,5 @@
 const { RateLimiterMemory } = require('rate-limiter-flexible');
-const { logger } = require('./logger');
+const { logger } = require('../utils/logger');
 
 // General API rate limiting (100 requests per 15 minutes)
 const apiRateLimiter = new RateLimiterMemory({
