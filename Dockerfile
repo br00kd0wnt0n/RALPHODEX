@@ -1,59 +1,35 @@
-# Root Dockerfile for Railway deployment
-# This builds the frontend from the correct context
-# Updated: Using npm install instead of npm ci to avoid lock file issues
-# Fixed: nginx config updated to remove backend proxy references
+# Root Dockerfile for Backend Service
+FROM node:20-alpine
 
-# Build stage
-FROM node:20-alpine AS build
-
+# Set working directory
 WORKDIR /app
 
-# Copy frontend package files first
-COPY frontend/package.json ./
-COPY frontend/package-lock.json ./
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
 
-# Debug and install dependencies with force resolution
-RUN ls -la ./
-RUN npm ci --force
-RUN npm install ajv@^8.0.0 --save-dev
+# Copy backend package files
+COPY backend/package*.json ./
 
-# Copy frontend source code
-COPY frontend/ ./
+# Install dependencies
+RUN npm install --omit=dev
 
-# Set build environment variables
-ENV SKIP_PREFLIGHT_CHECK=true
-ENV TSC_COMPILE_ON_ERROR=true
-ENV GENERATE_SOURCEMAP=false
-ENV REACT_APP_API_URL=https://backend-production-a0a1.up.railway.app/api
+# Copy backend source code
+COPY backend/ ./
 
-# Build the application
-RUN SKIP_PREFLIGHT_CHECK=true TSC_COMPILE_ON_ERROR=true GENERATE_SOURCEMAP=false CI=false npm run build
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
-# Debug: List build output
-RUN ls -la build/ || echo "Build directory:" && ls -la
+# Create logs directory and change ownership of app directory
+RUN mkdir -p logs && chown -R nodejs:nodejs /app
+USER nodejs
 
-# Production stage
-FROM nginx:alpine
+# Expose port
+EXPOSE 3001
 
-# Copy built files to nginx
-COPY --from=build /app/build /usr/share/nginx/html
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD node healthcheck.js || exit 1
 
-# Copy nginx config (Railway needs this at root level)
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Debug: Check what files were copied
-RUN ls -la /usr/share/nginx/html/
-
-# Create startup script for Railway's PORT
-RUN printf '#!/bin/sh\n\
-if [ -n "$PORT" ]; then\n\
-  sed -i "s/listen 80;/listen $PORT;/g" /etc/nginx/conf.d/default.conf\n\
-  sed -i "s/listen \\[::\\]:80;/listen \\[::\\]:$PORT;/g" /etc/nginx/conf.d/default.conf\n\
-fi\n\
-exec nginx -g "daemon off;"\n' > /start.sh && chmod +x /start.sh
-
-# Expose port (Railway will assign dynamically)
-EXPOSE 80
-
-# Start nginx with PORT handling
-CMD ["/bin/sh", "/start.sh"]
+# Start application with dumb-init
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "server.js"]
