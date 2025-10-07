@@ -48,6 +48,7 @@ export default function CreatorDetail() {
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [aiError, setAiError] = useState('');
+  const [refreshingCloud, setRefreshingCloud] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -133,16 +134,6 @@ export default function CreatorDetail() {
     }
   };
 
-  const analysis: any = creator.analysis_metadata || {};
-  const commentsSamples = analysis.comments_samples || {};
-  const captionCounts = analysis.caption_posts_by_platform || {};
-  const sourcePlatforms: string[] = analysis.conversation_sources || [];
-  const terms = creator.conversation_terms || {};
-  const topTerms = Object.entries(terms)
-    .sort((a, b) => (b[1] as number) - (a[1] as number))
-    .slice(0, 50);
-
-  const [refreshingCloud, setRefreshingCloud] = useState(false);
   const onRefreshCloud = async () => {
     if (!id) return;
     setRefreshingCloud(true);
@@ -154,6 +145,15 @@ export default function CreatorDetail() {
       setRefreshingCloud(false);
     }
   };
+
+  const analysis: any = creator.analysis_metadata || {};
+  const commentsSamples = analysis.comments_samples || {};
+  const captionCounts = analysis.caption_posts_by_platform || {};
+  const sourcePlatforms: string[] = analysis.conversation_sources || [];
+  const terms = creator.conversation_terms || {};
+  const topTerms = Object.entries(terms)
+    .sort((a, b) => (b[1] as number) - (a[1] as number))
+    .slice(0, 50);
 
   return (
     <Box>

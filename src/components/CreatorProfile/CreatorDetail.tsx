@@ -32,24 +32,8 @@ export default function CreatorDetail() {
   const { selectedCreator: creator, isLoading } = useAppSelector((state) => state.creators);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      dispatch(fetchCreatorById(id));
-    }
-  }, [dispatch, id]);
-
-  if (isLoading || !creator) {
-    return <Typography>Loading...</Typography>;
-  }
-
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-    return num.toString();
-  };
-
-  const terms = creator.conversation_terms || {};
-  const analysis = (creator as any).analysis_metadata || {};
+  const terms = creator?.conversation_terms || {};
+  const analysis = (creator as any)?.analysis_metadata || {};
   const commentsSamples = analysis.comments_samples || {};
   const captionCounts = analysis.caption_posts_by_platform || {};
   const sourcePlatforms: string[] = analysis.conversation_sources || [];
@@ -58,6 +42,12 @@ export default function CreatorDetail() {
       .sort((a, b) => (b[1] as number) - (a[1] as number))
       .slice(0, 50);
   }, [terms]);
+
+  useEffect(() => {
+    if (id) {
+      dispatch(fetchCreatorById(id));
+    }
+  }, [dispatch, id]);
 
   const handleRefreshCloud = async () => {
     if (!id) return;
@@ -69,6 +59,16 @@ export default function CreatorDetail() {
     } finally {
       setRefreshing(false);
     }
+  };
+
+  if (isLoading || !creator) {
+    return <Typography>Loading...</Typography>;
+  }
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toString();
   };
 
   const getSocialIcon = (platform: string) => {
