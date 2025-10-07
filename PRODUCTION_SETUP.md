@@ -112,6 +112,39 @@ curl -X POST \
   "https://your-backend.up.railway.app/api/creators/<CREATOR_ID>/conversations/refresh"
 ```
 
+### 9. Seeding from the Creator Sheet (CSV/XLSX)
+
+You can seed or upsert creators from the new sheet using the backend script. Note: the backend container does not include files outside `backend/`, so use a URL in production.
+
+Options:
+- Local to Production DB (recommended for one-off):
+  1) Set `DATABASE_URL` to your Railway Postgres URL
+  2) Run a dry-run:
+  ```bash
+  cd backend
+  DATABASE_URL=<railway-postgres-url> node seedFromSheet.js --prod --dry-run --file="../INTERNAL Facebook for Creators _ Master Creator List - Master Creator List (1).csv"
+  ```
+  3) Upsert (safe):
+  ```bash
+  DATABASE_URL=<railway-postgres-url> node seedFromSheet.js --prod
+  ```
+  4) Replace all (destructive):
+  ```bash
+  DATABASE_URL=<railway-postgres-url> node seedFromSheet.js --prod --replace
+  ```
+
+- In Railway (backend service) using a public URL:
+  1) Host the CSV/XLSX at a temporary URL (e.g., GitHub raw, S3)
+  2) Run the script in a one-off shell/exec:
+  ```bash
+  node seedFromSheet.js --prod --replace --url="https://example.com/path/to/Master%20Creator%20List.csv"
+  ```
+
+Notes:
+- The script supports both CSV and XLSX via `xlsx`.
+- `--replace` truncates and re-inserts; omit it to upsert based on name + handle(s).
+- Use `--dry-run` first to validate parsing and counts.
+
 ### 6. Troubleshooting
 
 #### Social Media Not Working
