@@ -49,6 +49,7 @@ export default function CreatorDetail() {
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [aiError, setAiError] = useState('');
   const [refreshingCloud, setRefreshingCloud] = useState(false);
+  const [cloudError, setCloudError] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -134,13 +135,17 @@ export default function CreatorDetail() {
     }
   };
 
-  const onRefreshCloud = async () => {
+  const onRefreshCloud = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
     if (!id) return;
     setRefreshingCloud(true);
+    setCloudError('');
     try {
       await dispatch(refreshConversationCloud(id)).unwrap();
-    } catch (e) {
-      // handled by slice
+      console.log('✅ Conversation cloud refreshed successfully');
+    } catch (error: any) {
+      console.error('❌ Conversation cloud refresh failed:', error);
+      setCloudError(error?.message || 'Failed to refresh conversation cloud');
     } finally {
       setRefreshingCloud(false);
     }
@@ -358,6 +363,11 @@ export default function CreatorDetail() {
             {refreshingCloud ? 'Refreshing…' : 'Refresh Cloud'}
           </Button>
         </Box>
+        {cloudError && (
+          <Alert severity="error" sx={{ mt: 1, mb: 2 }}>
+            {cloudError}
+          </Alert>
+        )}
         {creator.last_comment_fetch_at && (
           <Typography variant="caption" color="textSecondary">
             Last updated: {new Date(creator.last_comment_fetch_at).toLocaleString()}
@@ -382,7 +392,12 @@ export default function CreatorDetail() {
           </Box>
         )}
         <Box mt={2} display="flex" flexWrap="wrap" gap={1}>
-          {topTerms.length > 0 ? (
+          {refreshingCloud ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 3, width: '100%', justifyContent: 'center' }}>
+              <CircularProgress size={24} />
+              <Typography color="textSecondary">Fetching posts and comments...</Typography>
+            </Box>
+          ) : topTerms.length > 0 ? (
             topTerms.map(([term, count]) => (
               <Chip
                 key={term}

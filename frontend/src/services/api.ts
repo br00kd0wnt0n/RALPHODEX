@@ -57,8 +57,18 @@ export const creatorAPI = {
   addInteraction: (creatorId: string, data: any) =>
     apiClient.post(`/creators/${creatorId}/interactions`, data),
 
-  refreshConversationCloud: (creatorId: string) =>
-    apiClient.post(`/creators/${creatorId}/conversations/refresh`),
+  refreshConversationCloud: (creatorId: string) => {
+    console.log(`🔄 Refreshing conversation cloud for creator ${creatorId}`);
+    return apiClient.post(`/creators/${creatorId}/conversations/refresh`)
+      .then(response => {
+        console.log('✅ Conversation cloud API response:', response.data);
+        return response;
+      })
+      .catch(error => {
+        console.error('❌ Conversation cloud API error:', error.response?.data || error.message);
+        throw error;
+      });
+  },
 };
 
 export default apiClient;

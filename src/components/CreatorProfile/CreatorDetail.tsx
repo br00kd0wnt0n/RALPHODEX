@@ -49,7 +49,8 @@ export default function CreatorDetail() {
     }
   }, [dispatch, id]);
 
-  const handleRefreshCloud = async () => {
+  const handleRefreshCloud = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
     if (!id) return;
     setRefreshing(true);
     try {
