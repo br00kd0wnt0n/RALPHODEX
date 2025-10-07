@@ -18,6 +18,7 @@ import {
   CircularProgress,
   Alert,
   TextField,
+  Tooltip,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -351,25 +352,68 @@ export default function CreatorDetail() {
                 </Box>
               )}
               <Grid item xs={4}>
-                <Box sx={{
-                  textAlign: 'center',
-                  p: 1.5,
-                  borderRadius: 2,
-                  background: 'linear-gradient(135deg, #31BDBF15 0%, #31BDBF08 100%)',
-                  border: '1px solid #31BDBF30',
-                  '&:hover': { transform: 'translateY(-1px)', boxShadow: 2 },
-                  transition: 'all 0.2s ease-in-out'
-                }}>
-                  <Typography color="textSecondary" variant="overline" sx={{ fontSize: '0.65rem', fontWeight: 600 }}>
-                    Audience
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#31BDBF', mb: 0.5 }}>
-                    {formatNumber(creator.audience_size || 0)}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
-                    Total followers
-                  </Typography>
-                </Box>
+                <Tooltip
+                  title={
+                    creator.metrics_by_platform && Object.keys(creator.metrics_by_platform).length > 0 ? (
+                      <Box>
+                        <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.5 }}>
+                          By Platform:
+                        </Typography>
+                        {Object.entries(creator.metrics_by_platform).map(([platform, metrics]: [string, any]) => (
+                          <Typography key={platform} variant="caption" sx={{ display: 'block', fontSize: '0.7rem' }}>
+                            {platform.charAt(0).toUpperCase() + platform.slice(1)}: {metrics.post_count || 0} posts
+                          </Typography>
+                        ))}
+                        <Typography variant="caption" sx={{ display: 'block', mt: 0.5, fontStyle: 'italic', fontSize: '0.65rem' }}>
+                          Click "Refresh" to update
+                        </Typography>
+                      </Box>
+                    ) : (
+                      "Click 'Refresh' to fetch platform data"
+                    )
+                  }
+                  placement="top"
+                  arrow
+                >
+                  <Box sx={{
+                    textAlign: 'center',
+                    p: 1.5,
+                    borderRadius: 2,
+                    background: 'linear-gradient(135deg, #31BDBF15 0%, #31BDBF08 100%)',
+                    border: '1px solid #31BDBF30',
+                    '&:hover': { transform: 'translateY(-1px)', boxShadow: 2 },
+                    transition: 'all 0.2s ease-in-out',
+                    cursor: 'help'
+                  }}>
+                    <Typography color="textSecondary" variant="overline" sx={{ fontSize: '0.65rem', fontWeight: 600 }}>
+                      Audience
+                    </Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#31BDBF', mb: 0.5 }}>
+                      {formatNumber(creator.audience_size || 0)}
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
+                      Total followers
+                    </Typography>
+                    {creator.metrics_by_platform && Object.keys(creator.metrics_by_platform).length > 0 && (
+                      <Box sx={{ mt: 0.5, display: 'flex', gap: 0.5, justifyContent: 'center', flexWrap: 'wrap' }}>
+                        {Object.keys(creator.metrics_by_platform).map((platform) => (
+                          <Chip
+                            key={platform}
+                            label={platform.substring(0, 2).toUpperCase()}
+                            size="small"
+                            sx={{
+                              height: 16,
+                              fontSize: '0.6rem',
+                              bgcolor: '#31BDBF20',
+                              color: '#31BDBF',
+                              '& .MuiChip-label': { px: 0.5 }
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                </Tooltip>
               </Grid>
               <Grid item xs={4}>
                 <Box sx={{ 
