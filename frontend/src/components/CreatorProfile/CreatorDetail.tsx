@@ -33,7 +33,7 @@ import {
   AccessTime as AccessTimeIcon,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
-import { fetchCreatorById } from '../../store/slices/creatorSlice';
+import { fetchCreatorById, refreshConversationCloud } from '../../store/slices/creatorSlice';
 import RecentPosts from '../SocialMedia/RecentPosts';
 
 export default function CreatorDetail() {
@@ -130,6 +130,28 @@ export default function CreatorDetail() {
       case 'twitter': return <TwitterIcon />;
       case 'youtube': return <YouTubeIcon />;
       default: return null;
+    }
+  };
+
+  const analysis: any = creator.analysis_metadata || {};
+  const commentsSamples = analysis.comments_samples || {};
+  const captionCounts = analysis.caption_posts_by_platform || {};
+  const sourcePlatforms: string[] = analysis.conversation_sources || [];
+  const terms = creator.conversation_terms || {};
+  const topTerms = Object.entries(terms)
+    .sort((a, b) => (b[1] as number) - (a[1] as number))
+    .slice(0, 50);
+
+  const [refreshingCloud, setRefreshingCloud] = useState(false);
+  const onRefreshCloud = async () => {
+    if (!id) return;
+    setRefreshingCloud(true);
+    try {
+      await dispatch(refreshConversationCloud(id)).unwrap();
+    } catch (e) {
+      // handled by slice
+    } finally {
+      setRefreshingCloud(false);
     }
   };
 
@@ -327,6 +349,55 @@ export default function CreatorDetail() {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Conversation Word Cloud */}
+      <Card sx={{ p: 3, mb: 2 }}>
+        <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>Conversation Word Cloud</Typography>
+          <Button variant="outlined" onClick={onRefreshCloud} disabled={refreshingCloud}>
+            {refreshingCloud ? 'Refreshing…' : 'Refresh Cloud'}
+          </Button>
+        </Box>
+        {creator.last_comment_fetch_at && (
+          <Typography variant="caption" color="textSecondary">
+            Last updated: {new Date(creator.last_comment_fetch_at).toLocaleString()}
+          </Typography>
+        )}
+        {sourcePlatforms.length > 0 && (
+          <Box mt={0.5}>
+            <Typography variant="caption" color="textSecondary">
+              Sources: {sourcePlatforms.join(', ')}
+            </Typography>
+          </Box>
+        )}
+        {(Object.keys(commentsSamples).length > 0 || Object.keys(captionCounts).length > 0) && (
+          <Box mt={0.5}>
+            <Typography variant="caption" color="textSecondary">
+              Samples — {Object.keys({ ...commentsSamples, ...captionCounts }).map((plat) => {
+                const c = commentsSamples[plat] || 0;
+                const caps = captionCounts[plat] || 0;
+                return `${plat}: ${c} comments, ${caps} captions`;
+              }).join(' • ')}
+            </Typography>
+          </Box>
+        )}
+        <Box mt={2} display="flex" flexWrap="wrap" gap={1}>
+          {topTerms.length > 0 ? (
+            topTerms.map(([term, count]) => (
+              <Chip
+                key={term}
+                label={`${term}`}
+                sx={{
+                  fontSize: Math.min(24, 10 + Math.log(1 + (count as number)) * 6),
+                  backgroundColor: 'rgba(235, 0, 139, 0.08)'
+                }}
+              />
+            ))
+          ) : (
+            <Typography color="textSecondary">No terms yet. Try Refresh Cloud.</Typography>
+          )}
+        </Box>
+      </Card>
 
       {/* Profile Details Section */}
       <Box sx={{ mb: 2 }}>

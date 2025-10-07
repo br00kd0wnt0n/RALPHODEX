@@ -23,6 +23,12 @@ interface Creator {
   created_at: string;
   updated_at: string;
   interactions?: any[];
+  // Extra fields for conversations/metrics
+  conversation_terms?: Record<string, number>;
+  conversation_terms_by_platform?: Record<string, Record<string, number>>;
+  last_comment_fetch_at?: string;
+  metrics_updated_at?: string;
+  analysis_metadata?: Record<string, any>;
 }
 
 interface CreatorState {
@@ -58,6 +64,15 @@ export const fetchCreatorById = createAsyncThunk(
   async (id: string) => {
     const response = await creatorAPI.getCreatorById(id);
     return response.data;
+  }
+);
+
+export const refreshConversationCloud = createAsyncThunk(
+  'creators/refreshConversationCloud',
+  async (id: string) => {
+    await creatorAPI.refreshConversationCloud(id);
+    const refreshed = await creatorAPI.getCreatorById(id);
+    return refreshed.data;
   }
 );
 
@@ -115,6 +130,18 @@ const creatorSlice = createSlice({
       })
       .addCase(fetchCreatorById.fulfilled, (state, action) => {
         state.selectedCreator = action.payload;
+      })
+      .addCase(refreshConversationCloud.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(refreshConversationCloud.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.selectedCreator = action.payload;
+      })
+      .addCase(refreshConversationCloud.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to refresh conversation cloud';
       })
       .addCase(createCreator.fulfilled, (state, action) => {
         state.creators.unshift(action.payload);

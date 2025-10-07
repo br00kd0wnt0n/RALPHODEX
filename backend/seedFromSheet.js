@@ -154,18 +154,43 @@ function parseCreatorData(raw) {
 async function main() {
   const args = process.argv.slice(2);
   const fileArg = args.find(a => a.startsWith('--file='));
+  const urlArg = args.find(a => a.startsWith('--url='));
   const modeProd = args.includes('--prod');
   const dryRun = args.includes('--dry-run');
   const replaceAll = args.includes('--replace'); // if not set, will upsert
 
-  // Default to the new CSV if present; else fallback to the original XLSX
-  const defaultCsv = path.join('..', 'INTERNAL Facebook for Creators _ Master Creator List - Master Creator List (1).csv');
-  const defaultXlsx = path.join('..', 'INTERNAL Facebook for Creators _ Master Creator List.xlsx');
-  let sheetPath = fileArg ? fileArg.replace('--file=', '') : (fs.existsSync(defaultCsv) ? defaultCsv : defaultXlsx);
-
-  if (!fs.existsSync(sheetPath)) {
-    console.error('❌ Sheet file not found:', sheetPath);
-    process.exit(1);
+  // Determine sheet path: local file or remote URL
+  let sheetPath = null;
+  let tempFile = null;
+  if (urlArg) {
+    const url = urlArg.replace('--url=', '');
+    console.log('🌐 Downloading sheet from URL:', url);
+    // lazy import to avoid ESM issues
+    const https = require('https');
+    tempFile = path.join(require('os').tmpdir(), `sheet_${Date.now()}.csv`);
+    await new Promise((resolve, reject) => {
+      const file = fs.createWriteStream(tempFile);
+      https.get(url, (res) => {
+        if (res.statusCode !== 200) {
+          reject(new Error(`Failed to download file: ${res.statusCode}`));
+          return;
+        }
+        res.pipe(file);
+        file.on('finish', () => file.close(resolve));
+      }).on('error', (err) => {
+        fs.unlink(tempFile, () => reject(err));
+      });
+    });
+    sheetPath = tempFile;
+  } else {
+    // Default to the new CSV if present; else fallback to the original XLSX
+    const defaultCsv = path.join('..', 'INTERNAL Facebook for Creators _ Master Creator List - Master Creator List (1).csv');
+    const defaultXlsx = path.join('..', 'INTERNAL Facebook for Creators _ Master Creator List.xlsx');
+    sheetPath = fileArg ? fileArg.replace('--file=', '') : (fs.existsSync(defaultCsv) ? defaultCsv : defaultXlsx);
+    if (!fs.existsSync(sheetPath)) {
+      console.error('❌ Sheet file not found:', sheetPath);
+      process.exit(1);
+    }
   }
 
   console.log('📄 Using sheet:', sheetPath);
@@ -249,10 +274,12 @@ async function main() {
   } finally {
     await sequelize.close();
     console.log('🔌 DB connection closed');
+    if (tempFile && fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile);
+    }
   }
 }
 
 if (require.main === module) {
   main();
 }
-
