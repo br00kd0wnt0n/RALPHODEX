@@ -29,6 +29,31 @@ LOG_LEVEL=info
 RAILWAY_STATIC_URL=https://your-app-name.up.railway.app
 ```
 
+### 1.1 Scraper Provider Configuration (Comments → Word Clouds)
+
+Enable multi‑platform conversation word clouds by configuring provider hosts and endpoints. The same `RAPIDAPI_KEY` is used across providers; set the host per platform. Endpoints can be customized via env to match the provider’s docs.
+
+```env
+# Instagram comment scraping (RapidAPI)
+# Required host for your provider
+INSTAGRAM_COMMENTS_RAPIDAPI_HOST=instagram-api-fast-reliable-data-scraper.p.rapidapi.com
+# Path:param pairs (comma-separated). Example below uses media id.
+# The backend will call: https://$INSTAGRAM_COMMENTS_RAPIDAPI_HOST/comments?id=<media_id>
+INSTAGRAM_COMMENTS_ENDPOINTS=/comments:id
+
+# TikTok comment scraping (RapidAPI)
+# Default host works with many plans; override if using a different provider
+TIKTOK_COMMENTS_RAPIDAPI_HOST=tiktok-scraper7.p.rapidapi.com
+
+# Optional: per-platform keys if you want quota isolation (fallback to RAPIDAPI_KEY)
+# RAPIDAPI_KEY_INSTAGRAM=...
+# RAPIDAPI_KEY_TIKTOK=...
+```
+
+Notes:
+- You can list multiple Instagram endpoints as fallbacks by comma separating entries (e.g., `/comments:id,/comments-by-shortcode:shortcode`).
+- If a provider rejects unknown params, contact the dev to adjust the parameter set (we currently send `count=100` when supported).
+
 ### 2. API Key Setup Instructions
 
 #### RapidAPI (Instagram & TikTok)
@@ -73,6 +98,19 @@ REACT_APP_API_URL=https://your-backend-service.up.railway.app/api
 #### Health Checks
 - Backend: `https://your-backend.up.railway.app/api/health`
 - Should return: `{"status":"OK","message":"Creator Rolodex API is running"}`
+
+#### Conversation Cloud Refresh (Manual)
+- Endpoint: `POST /api/creators/:id/conversations/refresh`
+- Auth: Bearer JWT required (same as other protected routes)
+- Purpose: Fetch recent posts and attempt to retrieve comments via configured scrapers; aggregate uni/bi/tri-grams into a word cloud and store on the creator.
+
+Example:
+```bash
+curl -X POST \
+  -H "Authorization: Bearer <JWT>" \
+  -H "Content-Type: application/json" \
+  "https://your-backend.up.railway.app/api/creators/<CREATOR_ID>/conversations/refresh"
+```
 
 ### 6. Troubleshooting
 

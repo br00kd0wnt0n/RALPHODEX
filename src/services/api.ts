@@ -56,6 +56,9 @@ export const creatorAPI = {
   
   addInteraction: (creatorId: string, data: any) =>
     apiClient.post(`/creators/${creatorId}/interactions`, data),
+
+  refreshConversationCloud: (creatorId: string) =>
+    apiClient.post(`/creators/${creatorId}/conversations/refresh`),
 };
 
 export default apiClient;

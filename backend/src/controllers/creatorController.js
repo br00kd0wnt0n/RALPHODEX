@@ -1,6 +1,8 @@
 const { Creator, Interaction } = require('../models');
 const { Op } = require('sequelize');
 const socialMediaFetcher = require('../utils/socialMediaFetcher');
+const { fetchCommentsByPlatformMap, extractCaptionsFromPosts } = require('../utils/commentsFetcher');
+const { buildWordCloud } = require('../utils/textAnalysis');
 
 const creatorController = {
   async getAllCreators(req, res) {
@@ -275,6 +277,81 @@ const creatorController = {
         error: 'Failed to fetch social media posts',
         message: error.message 
       });
+    }
+  }
+  ,
+
+  async refreshConversationCloud(req, res) {
+    const startTime = Date.now();
+    try {
+      const creator = await Creator.findByPk(req.params.id);
+      if (!creator) return res.status(404).json({ error: 'Creator not found' });
+
+      // Fetch recent posts across platforms (re-use existing fetcher)
+      const posts = await socialMediaFetcher.fetchCreatorPosts(creator);
+
+      // Attempt to fetch comments via scraper providers (if configured)
+      const commentsByPlatform = await fetchCommentsByPlatformMap(posts);
+
+      // Partition posts by platform
+      const postsByPlat = posts.reduce((acc, p) => {
+        acc[p.platform] = acc[p.platform] || [];
+        acc[p.platform].push(p);
+        return acc;
+      }, {});
+
+      // Build text corpora per platform and overall
+      const captionsAll = extractCaptionsFromPosts(posts);
+      const commentsTextsAll = [];
+      const commentsByPlatTexts = {};
+      const captionsByPlatTexts = {};
+      const captionCountsByPlat = {};
+      for (const [plat, arr] of Object.entries(commentsByPlatform)) {
+        const texts = (arr || []).map(c => c.text).filter(Boolean);
+        commentsTextsAll.push(...texts);
+        commentsByPlatTexts[plat] = texts;
+      }
+      for (const [plat, arr] of Object.entries(postsByPlat)) {
+        const texts = extractCaptionsFromPosts(arr);
+        captionsByPlatTexts[plat] = texts;
+        captionCountsByPlat[plat] = texts.length;
+      }
+
+      const cloud = buildWordCloud(commentsTextsAll, captionsAll);
+
+      // Per-platform terms (computed independently per platform)
+      const byPlatform = {};
+      for (const plat of Object.keys(postsByPlat)) {
+        const cTexts = commentsByPlatTexts[plat] || [];
+        const capTexts = captionsByPlatTexts[plat] || [];
+        const localCloud = buildWordCloud(cTexts, capTexts);
+        byPlatform[plat] = localCloud.top_overall;
+      }
+
+      // Store results on creator
+      await creator.update({
+        conversation_terms: cloud.top_overall,
+        conversation_terms_by_platform: byPlatform,
+        last_comment_fetch_at: new Date(),
+        analysis_metadata: {
+          ...(creator.analysis_metadata || {}),
+          conversation_sources: Object.keys(commentsByPlatform),
+          caption_posts: posts.length,
+          caption_posts_by_platform: captionCountsByPlat,
+          comments_samples: Object.fromEntries(Object.entries(commentsByPlatTexts).map(([k,v]) => [k, v.length]))
+        }
+      });
+
+      const elapsed = Date.now() - startTime;
+      return res.json({
+        creator_id: creator.id,
+        creator_name: creator.full_name,
+        fetched_in_ms: elapsed,
+        platforms: Object.keys(commentsByPlatform),
+        summary: cloud
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
     }
   }
 };

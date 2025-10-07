@@ -97,6 +97,40 @@ const Creator = sequelize.define('Creator', {
   verified: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+  // New fields for metrics, analysis, and conversations
+  metrics_updated_at: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  metrics_by_platform: {
+    type: DataTypes.JSONB,
+    defaultValue: {}
+  },
+  activity_score: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+    defaultValue: 0.0
+  },
+  verification: {
+    type: DataTypes.JSONB,
+    defaultValue: {}
+  },
+  analysis_metadata: {
+    type: DataTypes.JSONB,
+    defaultValue: {}
+  },
+  conversation_terms: {
+    type: DataTypes.JSONB,
+    defaultValue: {}
+  },
+  conversation_terms_by_platform: {
+    type: DataTypes.JSONB,
+    defaultValue: {}
+  },
+  last_comment_fetch_at: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, {
   tableName: 'creators',

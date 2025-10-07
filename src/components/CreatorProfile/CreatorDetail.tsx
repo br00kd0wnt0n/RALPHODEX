@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -23,13 +23,14 @@ import {
   Phone as PhoneIcon,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
-import { fetchCreatorById } from '../../store/slices/creatorSlice';
+import { fetchCreatorById, refreshConversationCloud } from '../../store/slices/creatorSlice';
 
 export default function CreatorDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { selectedCreator: creator, isLoading } = useAppSelector((state) => state.creators);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -45,6 +46,29 @@ export default function CreatorDetail() {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
     return num.toString();
+  };
+
+  const terms = creator.conversation_terms || {};
+  const analysis = (creator as any).analysis_metadata || {};
+  const commentsSamples = analysis.comments_samples || {};
+  const captionCounts = analysis.caption_posts_by_platform || {};
+  const sourcePlatforms: string[] = analysis.conversation_sources || [];
+  const topTerms = useMemo(() => {
+    return Object.entries(terms)
+      .sort((a, b) => (b[1] as number) - (a[1] as number))
+      .slice(0, 50);
+  }, [terms]);
+
+  const handleRefreshCloud = async () => {
+    if (!id) return;
+    setRefreshing(true);
+    try {
+      await dispatch(refreshConversationCloud(id)).unwrap();
+    } catch (e) {
+      // noop; slice handles error state
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const getSocialIcon = (platform: string) => {
@@ -201,6 +225,54 @@ export default function CreatorDetail() {
               </Typography>
             </Paper>
           )}
+
+          <Paper sx={{ p: 3, mt: 2 }}>
+            <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+              <Typography variant="h6">Conversation Word Cloud</Typography>
+              <Button variant="outlined" onClick={handleRefreshCloud} disabled={refreshing}>
+                {refreshing ? 'Refreshing...' : 'Refresh Cloud'}
+              </Button>
+            </Box>
+            {creator.last_comment_fetch_at && (
+              <Typography variant="caption" color="textSecondary">
+                Last updated: {new Date(creator.last_comment_fetch_at).toLocaleString()}
+              </Typography>
+            )}
+            {sourcePlatforms && sourcePlatforms.length > 0 && (
+              <Box mt={1}>
+                <Typography variant="caption" color="textSecondary">
+                  Sources: {sourcePlatforms.join(', ')}
+                </Typography>
+              </Box>
+            )}
+            {(Object.keys(commentsSamples).length > 0 || Object.keys(captionCounts).length > 0) && (
+              <Box mt={1}>
+                <Typography variant="caption" color="textSecondary">
+                  Samples — {Object.keys({...commentsSamples, ...captionCounts}).map((plat) => {
+                    const c = commentsSamples[plat] || 0;
+                    const caps = captionCounts[plat] || 0;
+                    return `${plat}: ${c} comments, ${caps} captions`;
+                  }).join(' • ')}
+                </Typography>
+              </Box>
+            )}
+            <Box mt={2} display="flex" flexWrap="wrap" gap={1}>
+              {topTerms.length > 0 ? (
+                topTerms.map(([term, count]) => (
+                  <Chip
+                    key={term}
+                    label={`${term}`}
+                    sx={{
+                      fontSize: Math.min(24, 10 + Math.log(1 + (count as number)) * 6),
+                      backgroundColor: 'rgba(235, 0, 139, 0.08)'
+                    }}
+                  />
+                ))
+              ) : (
+                <Typography color="textSecondary">No terms yet. Try Refresh Cloud.</Typography>
+              )}
+            </Box>
+          </Paper>
 
           <Paper sx={{ p: 3, mt: 2 }}>
             <Typography variant="h6" gutterBottom>
