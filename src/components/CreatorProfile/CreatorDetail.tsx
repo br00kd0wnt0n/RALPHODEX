@@ -262,7 +262,7 @@ export default function CreatorDetail() {
             <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
               <Typography variant="h6">Conversation Word Cloud</Typography>
               <Button variant="outlined" onClick={handleRefreshCloud} disabled={refreshing}>
-                {refreshing ? 'Refreshing...' : 'Refresh Cloud'}
+                {refreshing ? 'Generating...' : 'Generate'}
               </Button>
             </Box>
             {creator.last_comment_fetch_at && (

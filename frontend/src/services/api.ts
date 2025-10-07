@@ -74,6 +74,19 @@ export const creatorAPI = {
     apiClient.get(`/creators/${creatorId}/comments`),
   addComment: (creatorId: string, data: { author_name: string; content: string }) =>
     apiClient.post(`/creators/${creatorId}/comments`, data),
+
+  refreshMetrics: (creatorId: string) => {
+    console.log(`🔄 Refreshing metrics for creator ${creatorId}`);
+    return apiClient.post(`/creators/${creatorId}/metrics/refresh`)
+      .then(response => {
+        console.log('✅ Metrics API response:', response.data);
+        return response;
+      })
+      .catch(error => {
+        console.error('❌ Metrics API error:', error.response?.data || error.message);
+        throw error;
+      });
+  },
 };
 
 export default apiClient;

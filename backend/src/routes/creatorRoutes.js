@@ -28,6 +28,9 @@ router.post('/:id/comments', creatorController.addComment);
 router.post('/:id/conversations/refresh', socialMediaLimiter, creatorController.refreshConversationCloud);
 router.get('/:id/conversations/diagnostics', creatorController.getConversationCloudDiagnostics);
 
+// Metrics refresh
+router.post('/:id/metrics/refresh', socialMediaLimiter, creatorController.refreshMetrics);
+
 // AI-powered endpoints
 router.get('/:id/insights', creatorController.getCreatorInsights);
 router.get('/:id/recommendations', creatorController.getCreatorRecommendations);

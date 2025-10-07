@@ -59,6 +59,8 @@ export default function CreatorDetail() {
   const [cloudError, setCloudError] = useState('');
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [diagnosticsData, setDiagnosticsData] = useState<any>(null);
+  const [refreshingMetrics, setRefreshingMetrics] = useState(false);
+  const [metricsError, setMetricsError] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -208,6 +210,24 @@ export default function CreatorDetail() {
     }
   };
 
+  const onRefreshMetrics = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (!id) return;
+    setRefreshingMetrics(true);
+    setMetricsError('');
+    try {
+      await creatorAPI.refreshMetrics(id);
+      // Refresh creator data to get updated metrics
+      await dispatch(fetchCreatorById(id)).unwrap();
+      console.log('✅ Metrics refreshed successfully');
+    } catch (error: any) {
+      console.error('❌ Metrics refresh failed:', error);
+      setMetricsError(error?.message || 'Failed to refresh metrics');
+    } finally {
+      setRefreshingMetrics(false);
+    }
+  };
+
   const analysis: any = creator.analysis_metadata || {};
   const commentsSamples = analysis.comments_samples || {};
   const captionCounts = analysis.caption_posts_by_platform || {};
@@ -288,12 +308,50 @@ export default function CreatorDetail() {
           {/* Metrics + Social Media Combined Module */}
           <Card sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Key Metrics Section */}
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-              Performance Metrics
-            </Typography>
-            <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Performance Metrics
+              </Typography>
+              <Button
+                variant="text"
+                size="small"
+                onClick={onRefreshMetrics}
+                disabled={refreshingMetrics}
+                sx={{ fontSize: '0.75rem', textTransform: 'none' }}
+              >
+                {refreshingMetrics ? 'Refreshing…' : 'Refresh'}
+              </Button>
+            </Box>
+            {metricsError && (
+              <Alert severity="error" sx={{ mb: 2, fontSize: '0.75rem' }}>
+                {metricsError}
+              </Alert>
+            )}
+            {creator.metrics_updated_at && (
+              <Typography variant="caption" color="textSecondary" sx={{ mb: 1, display: 'block' }}>
+                Last updated: {new Date(creator.metrics_updated_at).toLocaleString()}
+              </Typography>
+            )}
+            <Grid container spacing={2} sx={{ mb: 3, position: 'relative' }}>
+              {refreshingMetrics && (
+                <Box sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: 'rgba(255, 255, 255, 0.8)',
+                  zIndex: 10,
+                  borderRadius: 2
+                }}>
+                  <CircularProgress size={32} />
+                </Box>
+              )}
               <Grid item xs={4}>
-                <Box sx={{ 
+                <Box sx={{
                   textAlign: 'center',
                   p: 1.5,
                   borderRadius: 2,
@@ -426,7 +484,7 @@ export default function CreatorDetail() {
               Debug Info
             </Button>
             <Button variant="outlined" onClick={onRefreshCloud} disabled={refreshingCloud}>
-              {refreshingCloud ? 'Refreshing…' : 'Refresh Cloud'}
+              {refreshingCloud ? 'Generating…' : 'Generate'}
             </Button>
           </Box>
         </Box>

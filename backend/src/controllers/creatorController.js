@@ -366,6 +366,87 @@ const creatorController = {
     }
   },
 
+  async refreshMetrics(req, res) {
+    const startTime = Date.now();
+    try {
+      const creator = await Creator.findByPk(req.params.id);
+      if (!creator) return res.status(404).json({ error: 'Creator not found' });
+
+      console.log(`[Metrics] Refreshing metrics for creator: ${creator.full_name}`);
+
+      // Fetch recent posts to calculate engagement
+      const posts = await socialMediaFetcher.fetchCreatorPosts(creator);
+      console.log(`[Metrics] Fetched ${posts.length} posts for analysis`);
+
+      // Organize posts by platform
+      const postsByPlatform = posts.reduce((acc, post) => {
+        if (!acc[post.platform]) acc[post.platform] = [];
+        acc[post.platform].push(post);
+        return acc;
+      }, {});
+
+      // Calculate metrics per platform
+      const metricsByPlatform = {};
+      let totalFollowers = 0;
+      let totalEngagement = 0;
+      let totalPosts = posts.length;
+
+      for (const [platform, platformPosts] of Object.entries(postsByPlatform)) {
+        const totalLikes = platformPosts.reduce((sum, p) => sum + (p.likes || 0), 0);
+        const totalComments = platformPosts.reduce((sum, p) => sum + (p.comments || 0), 0);
+        const totalViews = platformPosts.reduce((sum, p) => sum + (p.views || 0), 0);
+
+        const avgLikes = platformPosts.length > 0 ? totalLikes / platformPosts.length : 0;
+        const avgComments = platformPosts.length > 0 ? totalComments / platformPosts.length : 0;
+        const avgViews = platformPosts.length > 0 ? totalViews / platformPosts.length : 0;
+
+        // Estimate engagement rate (likes + comments) / views * 100
+        const engagementRate = avgViews > 0 ? ((avgLikes + avgComments) / avgViews) * 100 : 0;
+
+        metricsByPlatform[platform] = {
+          post_count: platformPosts.length,
+          avg_likes: Math.round(avgLikes),
+          avg_comments: Math.round(avgComments),
+          avg_views: Math.round(avgViews),
+          total_engagement: totalLikes + totalComments,
+          engagement_rate: Math.round(engagementRate * 100) / 100
+        };
+
+        totalEngagement += (totalLikes + totalComments);
+      }
+
+      // Calculate overall engagement rate
+      const overallEngagementRate = totalPosts > 0 ? (totalEngagement / totalPosts) / 100 : 0;
+
+      // Update creator with new metrics
+      await creator.update({
+        metrics_by_platform: metricsByPlatform,
+        engagement_rate: Math.round(overallEngagementRate * 100) / 100,
+        metrics_updated_at: new Date(),
+        activity_score: totalPosts > 0 ? Math.min(100, totalPosts * 10) : 0
+      });
+
+      const elapsed = Date.now() - startTime;
+      console.log(`[Metrics] Complete! ${elapsed}ms, analyzed ${totalPosts} posts across ${Object.keys(postsByPlatform).length} platforms`);
+
+      return res.json({
+        creator_id: creator.id,
+        creator_name: creator.full_name,
+        fetched_in_ms: elapsed,
+        platforms: Object.keys(postsByPlatform),
+        metrics_by_platform: metricsByPlatform,
+        overall: {
+          total_posts: totalPosts,
+          engagement_rate: Math.round(overallEngagementRate * 100) / 100,
+          activity_score: Math.min(100, totalPosts * 10)
+        }
+      });
+    } catch (error) {
+      console.error(`[Metrics] Error:`, error);
+      return res.status(500).json({ error: error.message });
+    }
+  },
+
   async getConversationCloudDiagnostics(req, res) {
     try {
       const creator = await Creator.findByPk(req.params.id);
