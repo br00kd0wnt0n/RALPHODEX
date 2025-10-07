@@ -364,6 +364,44 @@ const creatorController = {
       console.error(`[ConvoCloud] Error:`, error);
       return res.status(500).json({ error: error.message });
     }
+  },
+
+  async getConversationCloudDiagnostics(req, res) {
+    try {
+      const creator = await Creator.findByPk(req.params.id);
+      if (!creator) return res.status(404).json({ error: 'Creator not found' });
+
+      const diagnostics = {
+        creator: {
+          id: creator.id,
+          name: creator.full_name,
+          social_handles: {
+            instagram: creator.instagram || null,
+            tiktok: creator.tiktok || null,
+            youtube: creator.youtube || null,
+            twitter: creator.twitter || null
+          }
+        },
+        environment: {
+          rapidapi_key_configured: !!process.env.RAPIDAPI_KEY,
+          rapidapi_key_length: process.env.RAPIDAPI_KEY?.length || 0,
+          instagram_host: process.env.INSTAGRAM_COMMENTS_RAPIDAPI_HOST || 'instagram120.p.rapidapi.com',
+          instagram_endpoints: process.env.INSTAGRAM_COMMENTS_ENDPOINTS || 'default',
+          tiktok_host: process.env.TIKTOK_COMMENTS_RAPIDAPI_HOST || 'tiktok-scraper7.p.rapidapi.com'
+        },
+        conversation_data: {
+          last_fetch: creator.last_comment_fetch_at || null,
+          term_count: Object.keys(creator.conversation_terms || {}).length,
+          platforms_with_data: Object.keys(creator.conversation_terms_by_platform || {}),
+          sample_terms: Object.entries(creator.conversation_terms || {}).slice(0, 5)
+        }
+      };
+
+      return res.json(diagnostics);
+    } catch (error) {
+      console.error('[Diagnostics] Error:', error);
+      return res.status(500).json({ error: error.message });
+    }
   }
 };
 

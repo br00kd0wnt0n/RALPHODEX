@@ -24,6 +24,7 @@ router.delete('/:id', creatorController.deleteCreator);
 router.post('/:id/interactions', validationMiddleware.validateInteraction, creatorController.addInteraction);
 // Conversations / word cloud refresh
 router.post('/:id/conversations/refresh', socialMediaLimiter, creatorController.refreshConversationCloud);
+router.get('/:id/conversations/diagnostics', creatorController.getConversationCloudDiagnostics);
 
 // AI-powered endpoints
 router.get('/:id/insights', creatorController.getCreatorInsights);

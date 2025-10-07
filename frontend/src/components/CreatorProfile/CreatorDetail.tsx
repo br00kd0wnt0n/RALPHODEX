@@ -50,6 +50,8 @@ export default function CreatorDetail() {
   const [aiError, setAiError] = useState('');
   const [refreshingCloud, setRefreshingCloud] = useState(false);
   const [cloudError, setCloudError] = useState('');
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [diagnosticsData, setDiagnosticsData] = useState<any>(null);
 
   useEffect(() => {
     if (id) {
@@ -148,6 +150,24 @@ export default function CreatorDetail() {
       setCloudError(error?.message || 'Failed to refresh conversation cloud');
     } finally {
       setRefreshingCloud(false);
+    }
+  };
+
+  const fetchDiagnostics = async () => {
+    if (!id) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/creators/${id}/conversations/diagnostics`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      setDiagnosticsData(data);
+      setShowDiagnostics(true);
+      console.log('📊 Diagnostics:', data);
+    } catch (error) {
+      console.error('Failed to fetch diagnostics:', error);
     }
   };
 
@@ -359,10 +379,34 @@ export default function CreatorDetail() {
       <Card sx={{ p: 3, mb: 2 }}>
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
           <Typography variant="h6" sx={{ fontWeight: 600 }}>Conversation Word Cloud</Typography>
-          <Button variant="outlined" onClick={onRefreshCloud} disabled={refreshingCloud}>
-            {refreshingCloud ? 'Refreshing…' : 'Refresh Cloud'}
-          </Button>
+          <Box display="flex" gap={1}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={fetchDiagnostics}
+              sx={{ fontSize: '0.75rem' }}
+            >
+              Debug Info
+            </Button>
+            <Button variant="outlined" onClick={onRefreshCloud} disabled={refreshingCloud}>
+              {refreshingCloud ? 'Refreshing…' : 'Refresh Cloud'}
+            </Button>
+          </Box>
         </Box>
+        {showDiagnostics && diagnosticsData && (
+          <Alert severity="info" sx={{ mt: 1, mb: 2 }} onClose={() => setShowDiagnostics(false)}>
+            <Typography variant="caption" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+              <strong>Creator:</strong> {diagnosticsData.creator.name}<br/>
+              <strong>Social Handles:</strong> IG: {diagnosticsData.creator.social_handles.instagram || 'none'},
+              TT: {diagnosticsData.creator.social_handles.tiktok || 'none'},
+              YT: {diagnosticsData.creator.social_handles.youtube || 'none'},
+              TW: {diagnosticsData.creator.social_handles.twitter || 'none'}<br/>
+              <strong>RapidAPI Key:</strong> {diagnosticsData.environment.rapidapi_key_configured ? `✅ Configured (${diagnosticsData.environment.rapidapi_key_length} chars)` : '❌ Missing'}<br/>
+              <strong>Last Fetch:</strong> {diagnosticsData.conversation_data.last_fetch || 'Never'}<br/>
+              <strong>Term Count:</strong> {diagnosticsData.conversation_data.term_count}
+            </Typography>
+          </Alert>
+        )}
         {cloudError && (
           <Alert severity="error" sx={{ mt: 1, mb: 2 }}>
             {cloudError}
