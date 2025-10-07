@@ -16,16 +16,24 @@ The following changes have been merged to `main` and pushed to GitHub:
 Add these environment variables to your **backend** service in Railway:
 
 ```env
-# Instagram comment scraping (RapidAPI)
+# RapidAPI key (required for all social media APIs)
+RAPIDAPI_KEY=your_rapidapi_key_here
+
+# Instagram POSTS fetching (for getting recent posts)
+INSTAGRAM_POSTS_RAPIDAPI_HOST=instagram-api-fast-reliable-data-scraper.p.rapidapi.com
+
+# Instagram COMMENTS scraping (for word clouds)
 INSTAGRAM_COMMENTS_RAPIDAPI_HOST=instagram-api-fast-reliable-data-scraper.p.rapidapi.com
 INSTAGRAM_COMMENTS_ENDPOINTS=/comments:id
 
 # TikTok comment scraping (RapidAPI)
 TIKTOK_COMMENTS_RAPIDAPI_HOST=tiktok-scraper7.p.rapidapi.com
-
-# Ensure your RapidAPI key is set (should already exist)
-RAPIDAPI_KEY=your_rapidapi_key_here
 ```
+
+**Important:** There are TWO separate Instagram hosts:
+- `INSTAGRAM_POSTS_RAPIDAPI_HOST` - for fetching posts from user profiles
+- `INSTAGRAM_COMMENTS_RAPIDAPI_HOST` - for fetching comments on posts
+- Both should use the same provider if using `instagram-api-fast-reliable-data-scraper`
 
 **Optional** (if you want separate API keys per platform for quota isolation):
 ```env

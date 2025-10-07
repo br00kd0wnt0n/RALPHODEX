@@ -385,8 +385,9 @@ const creatorController = {
         environment: {
           rapidapi_key_configured: !!process.env.RAPIDAPI_KEY,
           rapidapi_key_length: process.env.RAPIDAPI_KEY?.length || 0,
-          instagram_host: process.env.INSTAGRAM_COMMENTS_RAPIDAPI_HOST || 'instagram120.p.rapidapi.com',
-          instagram_endpoints: process.env.INSTAGRAM_COMMENTS_ENDPOINTS || 'default',
+          instagram_posts_host: process.env.INSTAGRAM_POSTS_RAPIDAPI_HOST || 'instagram120.p.rapidapi.com',
+          instagram_comments_host: process.env.INSTAGRAM_COMMENTS_RAPIDAPI_HOST || 'instagram120.p.rapidapi.com',
+          instagram_comments_endpoints: process.env.INSTAGRAM_COMMENTS_ENDPOINTS || 'default',
           tiktok_host: process.env.TIKTOK_COMMENTS_RAPIDAPI_HOST || 'tiktok-scraper7.p.rapidapi.com'
         },
         conversation_data: {

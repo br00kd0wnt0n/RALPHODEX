@@ -93,42 +93,45 @@ class SocialMediaFetcher {
       }
       console.log('✅ [INSTAGRAM] RapidAPI key found:', rapidApiKey ? 'Yes' : 'No');
 
-      console.log('📡 [INSTAGRAM] Making API request to Instagram120...');
-      // Try common Instagram120 API endpoints for user posts
+      // Use environment variable for host, with fallback
+      const igHost = process.env.INSTAGRAM_POSTS_RAPIDAPI_HOST || 'instagram120.p.rapidapi.com';
+      console.log(`📡 [INSTAGRAM] Making API request to ${igHost}...`);
+
+      // Try common Instagram API endpoints for user posts
       let response;
       try {
         // Try endpoint 1: /api/instagram/user/{username}
         console.log('🔍 [INSTAGRAM] Trying user endpoint...');
-        response = await axios.get(`https://instagram120.p.rapidapi.com/api/instagram/user/${username}`, {
+        response = await axios.get(`https://${igHost}/api/instagram/user/${username}`, {
           headers: {
             'X-RapidAPI-Key': rapidApiKey,
-            'X-RapidAPI-Host': 'instagram120.p.rapidapi.com'
+            'X-RapidAPI-Host': igHost
           }
         });
       } catch (error1) {
         console.log('⚠️ [INSTAGRAM] User endpoint failed, trying posts endpoint...');
         try {
           // Try endpoint 2: /api/instagram/posts
-          response = await axios.get('https://instagram120.p.rapidapi.com/api/instagram/posts', {
+          response = await axios.get(`https://${igHost}/api/instagram/posts`, {
             params: {
               username: username
             },
             headers: {
               'X-RapidAPI-Key': rapidApiKey,
-              'X-RapidAPI-Host': 'instagram120.p.rapidapi.com'
+              'X-RapidAPI-Host': igHost
             }
           });
         } catch (error2) {
           console.log('⚠️ [INSTAGRAM] Posts endpoint failed, trying profile endpoint...');
           // Try endpoint 3: /api/instagram/profile
-          response = await axios.get('https://instagram120.p.rapidapi.com/api/instagram/profile', {
+          response = await axios.get(`https://${igHost}/api/instagram/profile`, {
             params: {
               username: username,
               include_posts: true
             },
             headers: {
               'X-RapidAPI-Key': rapidApiKey,
-              'X-RapidAPI-Host': 'instagram120.p.rapidapi.com'
+              'X-RapidAPI-Host': igHost
             }
           });
         }
