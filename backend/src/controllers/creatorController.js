@@ -287,11 +287,19 @@ const creatorController = {
       const creator = await Creator.findByPk(req.params.id);
       if (!creator) return res.status(404).json({ error: 'Creator not found' });
 
+      console.log(`[ConvoCloud] Refreshing for creator: ${creator.full_name} (${creator.id})`);
+      console.log(`[ConvoCloud] Social handles: IG=${creator.instagram}, TT=${creator.tiktok}, YT=${creator.youtube}, TW=${creator.twitter}`);
+
       // Fetch recent posts across platforms (re-use existing fetcher)
       const posts = await socialMediaFetcher.fetchCreatorPosts(creator);
+      console.log(`[ConvoCloud] Fetched ${posts.length} posts from socialMediaFetcher`);
+      if (posts.length > 0) {
+        console.log(`[ConvoCloud] Post platforms:`, posts.map(p => p.platform).join(', '));
+      }
 
       // Attempt to fetch comments via scraper providers (if configured)
       const commentsByPlatform = await fetchCommentsByPlatformMap(posts);
+      console.log(`[ConvoCloud] Comments by platform:`, Object.keys(commentsByPlatform).map(k => `${k}: ${commentsByPlatform[k]?.length || 0}`).join(', '));
 
       // Partition posts by platform
       const postsByPlat = posts.reduce((acc, p) => {
@@ -343,14 +351,17 @@ const creatorController = {
       });
 
       const elapsed = Date.now() - startTime;
-      return res.json({
+      const result = {
         creator_id: creator.id,
         creator_name: creator.full_name,
         fetched_in_ms: elapsed,
         platforms: Object.keys(commentsByPlatform),
         summary: cloud
-      });
+      };
+      console.log(`[ConvoCloud] Complete! ${elapsed}ms, ${cloud.total_terms} terms generated`);
+      return res.json(result);
     } catch (error) {
+      console.error(`[ConvoCloud] Error:`, error);
       return res.status(500).json({ error: error.message });
     }
   }
