@@ -29,6 +29,8 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import axios from 'axios';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+
 interface Post {
   id: string;
   platform: 'instagram' | 'youtube' | 'tiktok' | 'twitter';
@@ -175,16 +177,19 @@ export default function RecentPosts({ creatorId }: RecentPostsProps) {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`/api/creators/${creatorId}/posts`, {
+      console.log(`🔄 Fetching posts for creator ${creatorId} from ${API_BASE_URL}`);
+      const response = await axios.get(`${API_BASE_URL}/creators/${creatorId}/posts`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
+      console.log('✅ Posts fetched:', response.data);
       setPostsData(response.data);
-    } catch (error) {
-      console.error('Failed to fetch creator posts:', error);
-      setError('Failed to load recent posts. Please try again.');
+    } catch (error: any) {
+      console.error('❌ Failed to fetch creator posts:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      setError(error.response?.data?.message || 'Failed to load recent posts. Please try again.');
     } finally {
       setLoading(false);
     }
