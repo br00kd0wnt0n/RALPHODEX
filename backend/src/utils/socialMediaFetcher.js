@@ -390,7 +390,7 @@ class SocialMediaFetcher {
           channelId: actualChannelId,
           part: 'snippet',
           order: 'date',
-          maxResults: 3,
+          maxResults: 10,
           type: 'video'
         }
       });

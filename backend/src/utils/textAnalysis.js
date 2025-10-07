@@ -1,5 +1,22 @@
 const STOPWORDS = new Set([
-  'the','a','an','and','or','but','if','then','else','for','on','in','at','to','from','by','of','with','as','is','it','this','that','these','those','be','are','was','were','i','you','he','she','they','we','me','my','our','your','their','has','have','had','do','did','done','not','no','so','too','very','can','will','just'
+  // Articles & determiners
+  'the','a','an','this','that','these','those',
+  // Conjunctions
+  'and','or','but','if','then','else','for','nor','yet','so',
+  // Prepositions
+  'on','in','at','to','from','by','of','with','as','into','onto','upon','about','above','below','between','through','during','before','after','since','until',
+  // Pronouns
+  'i','you','he','she','it','we','they','me','my','mine','your','yours','his','her','hers','its','our','ours','their','theirs','them','him',
+  // Verbs (common/filler)
+  'is','am','are','was','were','be','been','being','have','has','had','having','do','does','did','doing','done','can','could','will','would','should','shall','may','might','must',
+  // Adverbs & quantifiers
+  'not','no','yes','all','some','any','many','much','more','most','few','less','least','very','too','quite','rather','just','only','even','also','still','yet',
+  // Question words
+  'what','when','where','which','who','whom','whose','why','how',
+  // Other common filler
+  'one','two','get','got','go','going','went','gone','make','made','take','took','know','knew','think','thought','see','saw','come','came','want','wanted','like','liked','use','used','work','works','worked','way','time','thing','things','people','person','really','never','ever','always','often','sometimes','maybe','perhaps','probably',
+  // Fragments/contractions
+  've','ll','re','m','s','t','d'
 ]);
 
 function normalize(text) {
@@ -8,7 +25,13 @@ function normalize(text) {
 
 function tokenize(text) {
   const norm = normalize(text);
-  return norm.split(' ').filter(t => t && !STOPWORDS.has(t));
+  return norm.split(' ').filter(t => {
+    // Filter out: empty, stopwords, too short (< 3 chars), or pure numbers
+    return t &&
+           !STOPWORDS.has(t) &&
+           t.length >= 3 &&
+           !/^\d+$/.test(t);
+  });
 }
 
 function ngrams(tokens, n) {
@@ -23,9 +46,29 @@ function countTerms(texts, { includeBigrams = true, includeTrigrams = true } = {
   const counts = {};
   for (const text of texts) {
     const tokens = tokenize(text);
-    for (const t of tokens) counts[t] = (counts[t] || 0) + 1;
-    if (includeBigrams) for (const g of ngrams(tokens, 2)) counts[g] = (counts[g] || 0) + 1;
-    if (includeTrigrams) for (const g of ngrams(tokens, 3)) counts[g] = (counts[g] || 0) + 1;
+
+    // Count single words
+    for (const t of tokens) {
+      counts[t] = (counts[t] || 0) + 1;
+    }
+
+    // Count bigrams (filter out very short ones)
+    if (includeBigrams) {
+      for (const g of ngrams(tokens, 2)) {
+        if (g.length >= 6) { // At least "abc def" length
+          counts[g] = (counts[g] || 0) + 1;
+        }
+      }
+    }
+
+    // Count trigrams (filter out very short ones)
+    if (includeTrigrams) {
+      for (const g of ngrams(tokens, 3)) {
+        if (g.length >= 10) { // At least "abc def ghi" length
+          counts[g] = (counts[g] || 0) + 1;
+        }
+      }
+    }
   }
   return counts;
 }
