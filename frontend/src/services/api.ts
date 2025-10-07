@@ -69,6 +69,11 @@ export const creatorAPI = {
         throw error;
       });
   },
+  
+  getComments: (creatorId: string) =>
+    apiClient.get(`/creators/${creatorId}/comments`),
+  addComment: (creatorId: string, data: { author_name: string; content: string }) =>
+    apiClient.post(`/creators/${creatorId}/comments`, data),
 };
 
 export default apiClient;

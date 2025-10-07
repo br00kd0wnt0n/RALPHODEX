@@ -12,6 +12,7 @@ router.use(apiLimiter);
 // Public routes (no auth required for viewing)
 router.get('/', creatorController.getAllCreators);
 router.get('/:id', creatorController.getCreatorById);
+router.get('/:id/comments', creatorController.getComments);
 
 // Social media endpoints with strict rate limiting
 router.get('/:id/posts', socialMediaLimiter, creatorController.getCreatorPosts);
@@ -22,6 +23,7 @@ router.post('/', validationMiddleware.validateCreator, creatorController.createC
 router.put('/:id', validationMiddleware.validateCreator, creatorController.updateCreator);
 router.delete('/:id', creatorController.deleteCreator);
 router.post('/:id/interactions', validationMiddleware.validateInteraction, creatorController.addInteraction);
+router.post('/:id/comments', creatorController.addComment);
 // Conversations / word cloud refresh
 router.post('/:id/conversations/refresh', socialMediaLimiter, creatorController.refreshConversationCloud);
 router.get('/:id/conversations/diagnostics', creatorController.getConversationCloudDiagnostics);

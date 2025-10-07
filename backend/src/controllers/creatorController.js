@@ -1,4 +1,4 @@
-const { Creator, Interaction } = require('../models');
+const { Creator, Interaction, CreatorComment } = require('../models');
 const { Op } = require('sequelize');
 const socialMediaFetcher = require('../utils/socialMediaFetcher');
 const { fetchCommentsByPlatformMap, extractCaptionsFromPosts } = require('../utils/commentsFetcher');
@@ -402,6 +402,41 @@ const creatorController = {
     } catch (error) {
       console.error('[Diagnostics] Error:', error);
       return res.status(500).json({ error: error.message });
+    }
+  }
+  ,
+
+  async getComments(req, res) {
+    try {
+      const creator = await Creator.findByPk(req.params.id);
+      if (!creator) return res.status(404).json({ error: 'Creator not found' });
+      const comments = await CreatorComment.findAll({
+        where: { creator_id: req.params.id },
+        order: [['created_at', 'DESC']]
+      });
+      res.json(comments);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+  ,
+
+  async addComment(req, res) {
+    try {
+      const creator = await Creator.findByPk(req.params.id);
+      if (!creator) return res.status(404).json({ error: 'Creator not found' });
+      const { author_name, content } = req.body || {};
+      if (!author_name || !content) {
+        return res.status(400).json({ error: 'author_name and content are required' });
+      }
+      const comment = await CreatorComment.create({
+        creator_id: req.params.id,
+        author_name,
+        content
+      });
+      res.status(201).json(comment);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
     }
   }
 };

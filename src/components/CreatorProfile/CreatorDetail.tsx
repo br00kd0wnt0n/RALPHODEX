@@ -12,6 +12,7 @@ import {
   Card,
   CardContent,
   IconButton,
+  TextField,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -24,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import { fetchCreatorById, refreshConversationCloud } from '../../store/slices/creatorSlice';
+import { creatorAPI } from '../../services/api';
 
 export default function CreatorDetail() {
   const { id } = useParams<{ id: string }>();
@@ -31,6 +33,10 @@ export default function CreatorDetail() {
   const dispatch = useAppDispatch();
   const { selectedCreator: creator, isLoading } = useAppSelector((state) => state.creators);
   const [refreshing, setRefreshing] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [authorName, setAuthorName] = useState('');
+  const [commentBody, setCommentBody] = useState('');
 
   const terms = creator?.conversation_terms || {};
   const analysis = (creator as any)?.analysis_metadata || {};
@@ -49,6 +55,20 @@ export default function CreatorDetail() {
     }
   }, [dispatch, id]);
 
+  useEffect(() => {
+    const load = async () => {
+      if (!id) return;
+      setCommentsLoading(true);
+      try {
+        const res = await creatorAPI.getComments(id);
+        setComments(res.data || []);
+      } finally {
+        setCommentsLoading(false);
+      }
+    };
+    load();
+  }, [id]);
+
   const handleRefreshCloud = async (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     if (!id) return;
@@ -60,6 +80,17 @@ export default function CreatorDetail() {
     } finally {
       setRefreshing(false);
     }
+  };
+
+  const onSubmitComment = async () => {
+    if (!id) return;
+    if (!authorName.trim() || !commentBody.trim()) return;
+    try {
+      const res = await creatorAPI.addComment(id, { author_name: authorName.trim(), content: commentBody.trim() });
+      setComments([res.data, ...comments]);
+      setAuthorName('');
+      setCommentBody('');
+    } catch (e) {}
   };
 
   if (isLoading || !creator) {
@@ -299,6 +330,50 @@ export default function CreatorDetail() {
               <Typography color="textSecondary">
                 No interactions recorded yet.
               </Typography>
+            )}
+          </Paper>
+
+          <Paper sx={{ p: 3, mt: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Team Comments
+            </Typography>
+            <Box display="flex" gap={1} mb={2}>
+              <TextField
+                label="Your Name"
+                size="small"
+                value={authorName}
+                onChange={(e) => setAuthorName(e.target.value)}
+              />
+              <TextField
+                label="Add a comment"
+                size="small"
+                fullWidth
+                value={commentBody}
+                onChange={(e) => setCommentBody(e.target.value)}
+              />
+              <Button variant="contained" onClick={onSubmitComment} disabled={!authorName.trim() || !commentBody.trim()}>
+                Submit
+              </Button>
+            </Box>
+            {commentsLoading ? (
+              <Typography color="textSecondary">Loading comments…</Typography>
+            ) : (
+              <Box display="flex" flexDirection="column" gap={1}>
+                {comments.length === 0 && (
+                  <Typography color="textSecondary">No comments yet.</Typography>
+                )}
+                {comments.map((c) => (
+                  <Paper key={c.id} sx={{ p: 1.5 }} variant="outlined">
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Typography variant="subtitle2">{c.author_name}</Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        {new Date(c.created_at || c.createdAt).toLocaleString()}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" sx={{ mt: 0.5 }}>{c.content}</Typography>
+                  </Paper>
+                ))}
+              </Box>
             )}
           </Paper>
         </Grid>
