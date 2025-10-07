@@ -378,6 +378,14 @@ const creatorController = {
       const posts = await socialMediaFetcher.fetchCreatorPosts(creator);
       console.log(`[Metrics] Fetched ${posts.length} posts for analysis`);
 
+      // Fetch channel/profile statistics for follower counts
+      const channelStats = [];
+      if (creator.youtube) {
+        const ytStats = await socialMediaFetcher.fetchYouTubeChannelStats(creator.youtube);
+        if (ytStats) channelStats.push(ytStats);
+      }
+      console.log(`[Metrics] Fetched channel stats:`, channelStats);
+
       // Organize posts by platform
       const postsByPlatform = posts.reduce((acc, post) => {
         if (!acc[post.platform]) acc[post.platform] = [];
@@ -418,13 +426,31 @@ const creatorController = {
       // Calculate overall engagement rate
       const overallEngagementRate = totalPosts > 0 ? (totalEngagement / totalPosts) / 100 : 0;
 
+      // Calculate total audience from channel stats
+      let calculatedAudience = 0;
+      for (const stat of channelStats) {
+        if (stat.subscriberCount) {
+          calculatedAudience += stat.subscriberCount;
+        }
+        if (stat.followerCount) {
+          calculatedAudience += stat.followerCount;
+        }
+      }
+
       // Update creator with new metrics
-      await creator.update({
+      const updateData = {
         metrics_by_platform: metricsByPlatform,
         engagement_rate: Math.round(overallEngagementRate * 100) / 100,
         metrics_updated_at: new Date(),
         activity_score: totalPosts > 0 ? Math.min(100, totalPosts * 10) : 0
-      });
+      };
+
+      // Only update audience_size if we found a value from the APIs
+      if (calculatedAudience > 0) {
+        updateData.audience_size = calculatedAudience;
+      }
+
+      await creator.update(updateData);
 
       const elapsed = Date.now() - startTime;
       console.log(`[Metrics] Complete! ${elapsed}ms, analyzed ${totalPosts} posts across ${Object.keys(postsByPlatform).length} platforms`);

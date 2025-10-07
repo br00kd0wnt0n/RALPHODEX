@@ -232,6 +232,76 @@ class SocialMediaFetcher {
     }
   }
 
+  // Fetch YouTube channel statistics (subscribers, views, etc.)
+  async fetchYouTubeChannelStats(handle) {
+    console.log('🔍 [YOUTUBE STATS] Starting stats fetch for handle:', handle);
+
+    try {
+      const channelId = this.extractYouTubeHandle(handle);
+      console.log('🔍 [YOUTUBE STATS] Extracted channel ID:', channelId);
+
+      if (!channelId) {
+        console.log('❌ [YOUTUBE STATS] No valid channel ID extracted');
+        return null;
+      }
+
+      const apiKey = process.env.YOUTUBE_API_KEY;
+      if (!apiKey) {
+        console.log('❌ [YOUTUBE STATS] YouTube API key not configured');
+        return null;
+      }
+
+      // First resolve channel ID if needed
+      let actualChannelId = channelId;
+      if (!channelId.startsWith('UC')) {
+        try {
+          const searchResponse = await axios.get(`https://www.googleapis.com/youtube/v3/search`, {
+            params: {
+              key: apiKey,
+              q: channelId.replace('@', ''),
+              type: 'channel',
+              part: 'snippet',
+              maxResults: 1
+            }
+          });
+
+          if (searchResponse.data.items && searchResponse.data.items.length > 0) {
+            actualChannelId = searchResponse.data.items[0].id.channelId || searchResponse.data.items[0].snippet.channelId;
+          }
+        } catch (error) {
+          console.log('⚠️ [YOUTUBE STATS] Channel search failed');
+          return null;
+        }
+      }
+
+      // Fetch channel statistics
+      const response = await axios.get(`https://www.googleapis.com/youtube/v3/channels`, {
+        params: {
+          key: apiKey,
+          id: actualChannelId,
+          part: 'statistics,snippet'
+        }
+      });
+
+      if (response.data.items && response.data.items.length > 0) {
+        const channel = response.data.items[0];
+        const stats = {
+          subscriberCount: parseInt(channel.statistics.subscriberCount || 0),
+          videoCount: parseInt(channel.statistics.videoCount || 0),
+          viewCount: parseInt(channel.statistics.viewCount || 0),
+          platform: 'youtube'
+        };
+        console.log('✅ [YOUTUBE STATS] Fetched stats:', stats);
+        return stats;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('❌ [YOUTUBE STATS] Error:', error.message);
+      return null;
+    }
+  }
+
   // Fetch YouTube videos using YouTube Data API v3
   async fetchYouTubePosts(handle) {
     console.log('🔍 [YOUTUBE] Starting fetch for handle:', handle);
