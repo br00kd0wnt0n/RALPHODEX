@@ -372,12 +372,15 @@ class SocialMediaFetcher {
         });
 
         console.log('✅ [YOUTUBE] Successfully processed', posts.length, 'posts');
-        console.log('📋 [YOUTUBE] Posts summary:', posts.map(p => ({
-          id: p.id,
-          title: p.caption.substring(0, 50) + '...',
-          likes: p.likes,
-          views: stats ? stats.statistics?.viewCount : 'N/A'
-        })));
+        console.log('📋 [YOUTUBE] Posts summary:', posts.map(p => {
+          const videoStats = statsMap[p.id];
+          return {
+            id: p.id,
+            title: p.caption.substring(0, 50) + '...',
+            likes: p.likes,
+            views: videoStats ? videoStats.statistics?.viewCount : 'N/A'
+          };
+        }));
 
         return posts;
       }
